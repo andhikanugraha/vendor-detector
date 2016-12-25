@@ -1,0 +1,8 @@
+{
+  "extends": "tslint-microsoft-contrib/tslint.json",
+  "rules": {
+    "semicolon": [
+      "always"
+    ]
+  }
+}
