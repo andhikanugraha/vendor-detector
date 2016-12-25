@@ -17,7 +17,8 @@ function template(params) {
     if (params.data) {
         body = `
 <hr>
-<h3>${params.q}</h3>
+<h3>${params.q || ''}</h3>
+<hr>
 <h4>Details by hostname</h4>
 <table class="table">
   <thead>
