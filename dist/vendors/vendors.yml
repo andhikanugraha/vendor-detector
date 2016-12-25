@@ -15,6 +15,20 @@ Incapsula:
   headerDetectionRules:
     - X-CDN: Incapsula
 
+Facebook:
+  hostnameDetectionRules:
+    - endsWith: .facebook.com
+
+Google:
+  hostnameDetectionRules:
+    - endsWith: .google.com
+
+Adobe:
+  baseResult:
+    product: Marketing Cloud
+  hostnameDetectionRules:
+    - endsWith: .omtrdc.net
+
 # Reverse proxies
 Varnish:
   productCategories: ['proxy']
@@ -28,13 +42,15 @@ Apache:
   productCategories: ['webservers']
   headerDetectionRules:
     - Server: Apache/
-MicrosoftIIS:
+Microsoft:
+  baseResult:
+    product: IIS
   productCategories: ['webservers']
   headerDetectionRules:
     - Server: Microsoft-IIS/
 
 Express:
-  productCategories: ['framework'
+  productCategories: ['framework']
   headerDetectionRules:
     - X-Powered-By: Express
 
