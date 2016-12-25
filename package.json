@@ -1,0 +1,34 @@
+{
+  "name": "vendor-detector",
+  "version": "0.1.0",
+  "description": "Identify vendors used by a site.",
+  "main": "./dist/VendorDetector.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Andhika Nugraha (andhika.nugraha@outlook.com)",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/cheerio": "^0.17.31",
+    "@types/netmask": "^1.0.29",
+    "@types/node-fetch": "^1.6.6",
+    "@types/pify": "^0.0.28",
+    "del": "^2.2.2",
+    "eslint": "3.12.0",
+    "eslint-config-airbnb-base": "^11.0.0",
+    "eslint-plugin-import": "2.2.0",
+    "gulp": "^3.9.1",
+    "gulp-typescript": "^3.1.3",
+    "tslint": "^4.2.0",
+    "tslint-microsoft-contrib": "^4.0.0",
+    "typescript": "^2.1.4"
+  },
+  "dependencies": {
+    "cheerio": "^0.22.0",
+    "merge-stream": "^1.0.1",
+    "netmask": "^1.0.6",
+    "node-fetch": "^1.6.3",
+    "p-queue": "^0.2.0",
+    "pify": "^2.3.0"
+  }
+}
