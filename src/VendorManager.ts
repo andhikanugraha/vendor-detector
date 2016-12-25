@@ -1,8 +1,3 @@
-import * as url from 'url';
-
-import * as mergeStream from 'merge-stream';
-import * as fetchNS from 'node-fetch';
-
 import { Vendor, DetectionResult, DetectionResultSet } from './BaseVendor'
 import { AWS } from './vendors/AWS';
 import { Search } from './Search';
