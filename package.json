@@ -2,7 +2,7 @@
   "name": "vendor-detector",
   "version": "0.1.0",
   "description": "Identify vendors used by a site.",
-  "main": "./dist/VendorDetector.js",
+  "main": "./dist/Search.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
