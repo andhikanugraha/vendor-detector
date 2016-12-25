@@ -136,3 +136,10 @@ class Search {
     }
 }
 exports.Search = Search;
+function detectVendors(targetUrl, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const search = new Search(targetUrl, options);
+        return search.detectVendors();
+    });
+}
+exports.detectVendors = detectVendors;

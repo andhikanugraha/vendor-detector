@@ -159,3 +159,8 @@ export class Search {
     return this.fetchPool.fetch(url, options);
   }
 }
+
+export async function detectVendors(targetUrl: string, options?: SearchOptions) {
+  const search = new Search(targetUrl, options);
+  return search.detectVendors();
+}

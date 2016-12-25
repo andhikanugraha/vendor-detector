@@ -2,9 +2,9 @@ import { BaseVendor, IpRange } from '../BaseVendor';
 import fetch from 'node-fetch';
 
 interface AwsIpPrefix {
-  ip_prefix: string,
-  region: string,
-  service: string
+  ip_prefix: string;
+  region: string;
+  service: string;
 }
 
 const AmazonS3 = {

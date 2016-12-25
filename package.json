@@ -10,6 +10,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/cheerio": "^0.17.31",
+    "@types/express": "^4.0.34",
     "@types/graceful-fs": "^2.0.29",
     "@types/js-yaml": "^3.5.29",
     "@types/netmask": "^1.0.29",
@@ -24,7 +25,9 @@
     "typescript": "^2.1.4"
   },
   "dependencies": {
+    "bootstrap": "4.0.0-alpha.5",
     "cheerio": "^0.22.0",
+    "express": "^4.14.0",
     "graceful-fs": "^4.1.11",
     "js-yaml": "^3.7.0",
     "netmask": "^1.0.6",
