@@ -5,8 +5,8 @@ import { detectVendors } from './Search';
 
 const app = express();
 
-app.use('/css', express.static('node_modules/bootstrap/dist/css'));
-app.use('/js', express.static('node_modules/bootstrap/dist/js'));
+app.use('/css', express.static(__dirname + '/../node_modules/bootstrap/dist/css'));
+app.use('/js', express.static(__dirname + '/../node_modules/bootstrap/dist/js'));
 
 function template(params) {
   let body = '';
@@ -55,7 +55,7 @@ function template(params) {
 
   <form class="form" action="/" method="GET">
     <p class="input-group">
-      <input type="text" class="form-control" placeholder="Target URL" name="q" value="${params.q}">
+      <input type="text" class="form-control" placeholder="Target URL" name="q" value="${params.q || ''}">
       <span class="input-group-btn">
         <button class="btn btn-primary" type="submit">Search</button>
       </span>
