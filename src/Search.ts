@@ -10,7 +10,7 @@ import * as pify from 'pify';
 const dnsAsync = pify(dns);
 
 interface SearchOptions extends FetchPoolOptions {
-  vendors?: string[]
+  vendors?: string[];
 }
 
 export class Search {
@@ -95,11 +95,15 @@ export class Search {
 
   async resolveHostnames() {
     for (let hostname of this.hostnames) {
-      const ipv4addr: string[] = await dnsAsync.resolve4(hostname);
-      ipv4addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
+      const ipv4addr: string[] = await dnsAsync.resolve4(hostname).catch(e => {});
+      if (ipv4addr) {
+        ipv4addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
+      }
 
-      const ipv6addr: string[] = await dnsAsync.resolve4(hostname);
-      ipv6addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
+      const ipv6addr: string[] = await dnsAsync.resolve4(hostname).catch(e => {});
+      if (ipv6addr) {
+        ipv6addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
+      }
     }
   }
 
@@ -130,6 +134,11 @@ export class Search {
       urlString = href;
     }
 
+    let parsedUrlString = url.parse(urlString);
+    if (!parsedUrlString.protocol.match('http')) {
+      return;
+    }
+
     const hostname = this.getHostname(urlString);
 
     this.urls.add(urlString);
@@ -156,7 +165,7 @@ export class Search {
   }
 
   fetch(url: string, options = { headers: {} }): Promise<FetchResponse> {
-    return this.fetchPool.fetch(url, options);
+    return this.fetchPool.fetch(url, options).catch(e => { throw e });
   }
 }
 

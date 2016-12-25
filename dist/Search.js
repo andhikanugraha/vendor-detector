@@ -83,10 +83,14 @@ class Search {
     resolveHostnames() {
         return __awaiter(this, void 0, void 0, function* () {
             for (let hostname of this.hostnames) {
-                const ipv4addr = yield dnsAsync.resolve4(hostname);
-                ipv4addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
-                const ipv6addr = yield dnsAsync.resolve4(hostname);
-                ipv6addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
+                const ipv4addr = yield dnsAsync.resolve4(hostname).catch(e => { });
+                if (ipv4addr) {
+                    ipv4addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
+                }
+                const ipv6addr = yield dnsAsync.resolve4(hostname).catch(e => { });
+                if (ipv6addr) {
+                    ipv6addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
+                }
             }
         });
     }
@@ -112,6 +116,10 @@ class Search {
         else {
             urlString = href;
         }
+        let parsedUrlString = url.parse(urlString);
+        if (!parsedUrlString.protocol.match('http')) {
+            return;
+        }
         const hostname = this.getHostname(urlString);
         this.urls.add(urlString);
         this.hostnames.add(hostname);
@@ -132,7 +140,7 @@ class Search {
         this.hostnamesByTag.get(tag).add(hostname);
     }
     fetch(url, options = { headers: {} }) {
-        return this.fetchPool.fetch(url, options);
+        return this.fetchPool.fetch(url, options).catch(e => { throw e; });
     }
 }
 exports.Search = Search;
