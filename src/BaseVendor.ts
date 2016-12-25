@@ -18,15 +18,15 @@ export interface Vendor {
 }
 
 export interface DetectionResult {
-  certainty?: string,
-  vendor?: string,
-  product?: string,
-  productCategories?: string[],
-  region?: string,
-  ipRange?: string,
-  hostname?: string,
-  url?: string,
-  message?: string
+  certainty?: string;
+  vendor?: string;
+  product?: string;
+  productCategories?: string[];
+  region?: string;
+  ipRange?: string;
+  hostname?: string;
+  url?: string;
+  message?: string;
 }
 
 export class DetectionResultSet extends Array<DetectionResult> {
@@ -71,7 +71,7 @@ export interface HeaderDetectionRuleObject {
   header: string;
   urlSampling?: UrlSampling;
   match: string | RegExp;
-  result?: DetectionResult
+  result?: DetectionResult;
 }
 
 export type HostnameDetectionRule =
@@ -81,18 +81,18 @@ export type HostnameDetectionRule =
 
 export interface HostnameDetectionRuleShorthand {
   endsWith: string;
-  result?: DetectionResult
+  result?: DetectionResult;
 }
 
 export interface HostnameDetectionRuleObject {
   match: string | RegExp;
-  result?: DetectionResult
+  result?: DetectionResult;
 }
 
 export interface IpRange {
-  ipRange: string,
-  netmask?: Netmask,
-  region?: string
+  ipRange: string;
+  netmask?: Netmask;
+  region?: string;
 }
 
 export class BaseVendor implements Vendor {
@@ -194,6 +194,11 @@ export class BaseVendor implements Vendor {
   }
 
   async detectByIpv4Addresses(): Promise<void> {
+    const ctor: any = this.constructor;
+    if (ctor.ipRanges) {
+      this.ipRanges = ctor.ipRanges;
+    }
+
     if (this.ipRanges.length === 0 || this.search.resolvedHostnames.length === 0) {
       return;
     }
@@ -206,7 +211,7 @@ export class BaseVendor implements Vendor {
     while (resolvedHostnameCursor < resolvedHostnames.length &&
            ipRangeCursor < this.ipRanges.length) {
       const currentResolvedHostname = resolvedHostnames[resolvedHostnameCursor];
-      const currentIpRange = this.ipRanges[ipRangeCursor]
+      const currentIpRange = this.ipRanges[ipRangeCursor];
       const [hostname, addr] = currentResolvedHostname;
       const found = currentIpRange.netmask.contains(addr);
 
@@ -245,7 +250,7 @@ export class BaseVendor implements Vendor {
           this.addResult({ hostname, certainty: DetectionCertainty.Definite, ...rule.result });
         }
       });
-    })
+    });
   }
 
   matchHostname(hostname: string, match: string | RegExp): boolean {
@@ -275,7 +280,7 @@ export class BaseVendor implements Vendor {
       fetchPromises.push(this.applyHeaderDetectionRulesForUrl(hostname, sampleUrl));
     });
 
-    await Promise.all(fetchPromises).catch(e => { throw e });
+    await Promise.all(fetchPromises).catch(e => { throw e; });
   }
 
   async applyHeaderDetectionRulesForUrl(sampleUrl, hostname: string): Promise<void> {

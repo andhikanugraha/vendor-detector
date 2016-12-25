@@ -113,6 +113,10 @@ class BaseVendor {
     }
     detectByIpv4Addresses() {
         return __awaiter(this, void 0, void 0, function* () {
+            const ctor = this.constructor;
+            if (ctor.ipRanges) {
+                this.ipRanges = ctor.ipRanges;
+            }
             if (this.ipRanges.length === 0 || this.search.resolvedHostnames.length === 0) {
                 return;
             }
