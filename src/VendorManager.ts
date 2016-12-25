@@ -1,12 +1,52 @@
-import { Vendor, DetectionResult, DetectionResultSet } from './BaseVendor'
-import { AWS } from './vendors/AWS';
+import * as fs from 'graceful-fs';
+
+import { Vendor, BaseVendor, DetectionResult } from './BaseVendor'
 import { Search } from './Search';
+
+import * as yaml from 'js-yaml';
 
 export type VendorConstructor = {new(): Vendor};
 export type VendorReference = string;
 
+function getVendorConstructors(): any {
+  const vendors: any = {};
+
+  if (fs.existsSync(`${__dirname}/vendors/vendors.yml`)) {
+    let vendorsObj = yaml.safeLoad(fs.readFileSync(`${__dirname}/vendors/vendors.yml`).toString());
+    Object.keys(vendorsObj).forEach(vendorName => {
+      const properties = vendorsObj[vendorName];
+      if (!properties.baseResult) {
+        properties.baseResult = {};
+      }
+      properties.baseResult.vendor = vendorName;
+      const adhocClass = class AdhocVendor extends BaseVendor {
+        constructor(search: Search) {
+          super(search);
+          Object.assign(this, properties);
+        }
+      }
+      vendors[vendorName] = adhocClass;
+    });
+  }
+
+  const files = fs.readdirSync(`${__dirname}/vendors`);
+  files.forEach((filename: string) => {
+    if (filename === 'vendors.yml') {
+      return;
+    }
+
+    let className = filename.substr(0, filename.length - 3);
+    try {
+      vendors[className] = require(`./vendors/${className}`)[className];
+    }
+    catch (e) {}
+  });
+
+  return vendors;
+}
+
 export class VendorManager {
-  private static vendorConstructors = { AWS };
+  private static vendorConstructors = getVendorConstructors();
   private static vendorObjects = new Map<string, Vendor>();
   private static vendorInitPromises = new Map<VendorConstructor, Promise<void>>();
 

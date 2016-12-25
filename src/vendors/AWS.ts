@@ -1,4 +1,4 @@
-import { BaseVendor, UrlSampling, IpRange } from '../BaseVendor';
+import { BaseVendor, IpRange } from '../BaseVendor';
 import fetch from 'node-fetch';
 
 interface AwsIpPrefix {
@@ -7,21 +7,28 @@ interface AwsIpPrefix {
   service: string
 }
 
-export class AWS extends BaseVendor  {
-  baseResult = {
-    vendor: 'aws',
-  };
+const AmazonS3 = {
+  product: 'S3',
+  productCategories: ['storage']
+};
 
+const CloudFront = {
+  product: 'CloudFront',
+  productCategories: ['cdn']
+}
+
+export class AWS extends BaseVendor  {
+  hostnameDetectionRules = [/.amazonaws.com$/];
   headerDetectionRules = [
     {
       header: 'Server',
       match: 'AmazonS3',
-      result: { product: 'S3' }
+      result: AmazonS3
     },
     {
       header: 'Via',
       match: 'CloudFront',
-      result: { product: 'CloudFront' }
+      result: CloudFront
     }
   ];
 

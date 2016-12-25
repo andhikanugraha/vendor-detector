@@ -1,0 +1,45 @@
+---
+# CDN
+Akamai:
+  productCategories: ['cdn']
+  headerDetectionRules:
+    - Server: Akamai
+  hostnameDetectionRules:
+    - endsWith: .edgesuite.net
+Fastly:
+  productCategories: ['cdn']
+  hostnameDetectionRules:
+    - endsWith: .fastly.net
+Incapsula:
+  productCategories: ['cdn', 'security']
+  headerDetectionRules:
+    - X-CDN: Incapsula
+
+# Reverse proxies
+Varnish:
+  productCategories: ['proxy']
+  headerDetectionRules:
+    - Via: varnish
+
+# Webservers
+Apache:
+  baseResult:
+    product: httpd
+  productCategories: ['webservers']
+  headerDetectionRules:
+    - Server: Apache/
+MicrosoftIIS:
+  productCategories: ['webservers']
+  headerDetectionRules:
+    - Server: Microsoft-IIS/
+
+Express:
+  productCategories: ['framework'
+  headerDetectionRules:
+    - X-Powered-By: Express
+
+PHP:
+  productCategories:
+    - serverSideProgramming
+  headerDetectionRules:
+    - X-Powered-By: PHP

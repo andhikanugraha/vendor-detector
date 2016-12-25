@@ -18,9 +18,10 @@ export interface Vendor {
 }
 
 export interface DetectionResult {
-  certainty: string,
-  vendor: string,
+  certainty?: string,
+  vendor?: string,
   product?: string,
+  productCategories?: string[],
   region?: string,
   ipRange?: string,
   hostname?: string,
@@ -60,11 +61,32 @@ export const enum DetectionCertainty {
   Probable = 0.5
 }
 
-export interface HeaderDetectionRule {
+export type HeaderDetectionRule =
+  HeaderDetectionShorthand |
+  HeaderDetectionRuleObject;
+
+export type HeaderDetectionShorthand = any;
+
+export interface HeaderDetectionRuleObject {
   header: string;
   urlSampling?: UrlSampling;
   match: string | RegExp;
-  result: any
+  result?: DetectionResult
+}
+
+export type HostnameDetectionRule =
+  RegExp |
+  HostnameDetectionRuleShorthand |
+  HostnameDetectionRuleObject;
+
+export interface HostnameDetectionRuleShorthand {
+  endsWith: string;
+  result?: DetectionResult
+}
+
+export interface HostnameDetectionRuleObject {
+  match: string | RegExp;
+  result?: DetectionResult
 }
 
 export interface IpRange {
@@ -73,11 +95,14 @@ export interface IpRange {
   region?: string
 }
 
-export abstract class BaseVendor implements Vendor {
+export class BaseVendor implements Vendor {
   readonly results: DetectionResultSet = new DetectionResultSet();
   readonly baseResult: any = {};
 
   headerDetectionRules: HeaderDetectionRule[] = [];
+  hostnameDetectionRules: HostnameDetectionRule[] = [];
+
+  productCategories?: string[];
 
   readonly sampleUrls = new Map<string, string>();
 
@@ -93,6 +118,10 @@ export abstract class BaseVendor implements Vendor {
 
   async init(): Promise<void> {
     const ctor: any = this.constructor; // the class inheriting this class
+    if (!ctor.init) {
+      return;
+    }
+
     await ctor.init(async (url: string, options?: any) => this.fetch(url, options));
     if (ctor.ipRanges) {
       this.ipRanges = ctor.ipRanges.map(range => {
@@ -106,9 +135,16 @@ export abstract class BaseVendor implements Vendor {
   }
 
   async detect(): Promise<DetectionResultSet> {
-    this.results.setBaseResult(this.baseResult);
+    this.results.setBaseResult({
+      vendor: this.constructor.name,
+      productCategories: this.productCategories,
+      ...this.baseResult
+    });
+
+    this.expandHeaderDetectionRuleShorthand();
     this.populateSampleUrls();
 
+    this.applyHostnameDetectionRules();
     await this.detectByIpv4Addresses();
     await this.applyHeaderDetectionRules();
 
@@ -124,8 +160,8 @@ export abstract class BaseVendor implements Vendor {
     let addedHttp = false;
 
     // Added url samples
-    rules.forEach(rule => {
-      const sampling = rule.urlSampling;
+    rules.forEach((rule: HeaderDetectionRuleObject) => {
+      const sampling = rule.urlSampling || UrlSampling.One;
 
       if (sampling === UrlSampling.All && !addedAll) {
         this.search.urlsByHostname.forEach((urls, hostname) => {
@@ -190,7 +226,50 @@ export abstract class BaseVendor implements Vendor {
     }
   }
 
+  applyHostnameDetectionRules(): void {
+    const hostnameRules: HostnameDetectionRuleObject[] =
+      // Expand shorthand syntax for header rules
+      this.hostnameDetectionRules.map((rule: any): HostnameDetectionRuleObject => {
+        if (rule instanceof RegExp) {
+          return { match: rule, result: {} };
+        }
+        else if (rule.endsWith) {
+          return { match: new RegExp(rule.endsWith.replace('.', '\\.') + '$'), result: {} };
+        }
+        return rule;
+      });
+
+    this.search.hostnames.forEach(hostname => {
+      hostnameRules.forEach(rule => {
+        if (this.matchHostname(hostname, rule.match)) {
+          this.addResult({ hostname, certainty: DetectionCertainty.Definite, ...rule.result });
+        }
+      });
+    })
+  }
+
+  matchHostname(hostname: string, match: string | RegExp): boolean {
+    if (typeof match === 'string') {
+      return !!hostname.match(match);
+    }
+    else {
+      return !!match.exec(hostname);
+    }
+  }
+
+  expandHeaderDetectionRuleShorthand(): void {
+    // Expand shorthand syntax for header rules
+    this.headerDetectionRules.forEach((rule, idx) => {
+      if (Object.keys(rule).length === 1) {
+        const header = Object.keys(rule)[0];
+        const match = rule[header];
+        this.headerDetectionRules[idx] = { header, match };
+      }
+    });
+  }
+
   async applyHeaderDetectionRules(): Promise<void> {
+
     const fetchPromises: Promise<void>[] = [];
     this.sampleUrls.forEach((sampleUrl, hostname) => {
       fetchPromises.push(this.applyHeaderDetectionRulesForUrl(hostname, sampleUrl));
@@ -203,7 +282,7 @@ export abstract class BaseVendor implements Vendor {
     const response = await this.fetchHead(sampleUrl);
     const headers = response.headers;
 
-    this.headerDetectionRules.forEach(rule => {
+    this.headerDetectionRules.forEach((rule: HeaderDetectionRuleObject) => {
       if (this.matchHeader(headers, rule.header, rule.match)) {
         const result: any = { certainty: DetectionCertainty.Definite, hostname };
         if (rule.urlSampling === UrlSampling.All) {

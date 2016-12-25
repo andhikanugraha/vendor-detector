@@ -9,22 +9,28 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const BaseVendor_1 = require("../BaseVendor");
 const node_fetch_1 = require("node-fetch");
+const AmazonS3 = {
+    product: 'S3',
+    productCategories: ['storage']
+};
+const CloudFront = {
+    product: 'CloudFront',
+    productCategories: ['cdn']
+};
 class AWS extends BaseVendor_1.BaseVendor {
     constructor() {
         super(...arguments);
-        this.baseResult = {
-            vendor: 'aws',
-        };
+        this.hostnameDetectionRules = [/.amazonaws.com$/];
         this.headerDetectionRules = [
             {
                 header: 'Server',
                 match: 'AmazonS3',
-                result: { product: 'S3' }
+                result: AmazonS3
             },
             {
                 header: 'Via',
                 match: 'CloudFront',
-                result: { product: 'CloudFront' }
+                result: CloudFront
             }
         ];
     }

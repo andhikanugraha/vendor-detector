@@ -39,6 +39,7 @@ class BaseVendor {
         this.results = new DetectionResultSet();
         this.baseResult = {};
         this.headerDetectionRules = [];
+        this.hostnameDetectionRules = [];
         this.sampleUrls = new Map();
         this.intermediateByHostname = new Map();
         this.ipRanges = [];
@@ -47,6 +48,9 @@ class BaseVendor {
     init() {
         return __awaiter(this, void 0, void 0, function* () {
             const ctor = this.constructor; // the class inheriting this class
+            if (!ctor.init) {
+                return;
+            }
             yield ctor.init((url, options) => __awaiter(this, void 0, void 0, function* () { return this.fetch(url, options); }));
             if (ctor.ipRanges) {
                 this.ipRanges = ctor.ipRanges.map(range => {
@@ -60,8 +64,10 @@ class BaseVendor {
     }
     detect() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.results.setBaseResult(this.baseResult);
+            this.results.setBaseResult(__assign({ vendor: this.constructor.name, productCategories: this.productCategories }, this.baseResult));
+            this.expandHeaderDetectionRuleShorthand();
             this.populateSampleUrls();
+            this.applyHostnameDetectionRules();
             yield this.detectByIpv4Addresses();
             yield this.applyHeaderDetectionRules();
             return this.results;
@@ -74,8 +80,8 @@ class BaseVendor {
         let addedHttps = false;
         let addedHttp = false;
         // Added url samples
-        rules.forEach(rule => {
-            const sampling = rule.urlSampling;
+        rules.forEach((rule) => {
+            const sampling = rule.urlSampling || 0 /* One */;
             if (sampling === 1 /* All */ && !addedAll) {
                 this.search.urlsByHostname.forEach((urls, hostname) => {
                     urls.forEach(sampleUrl => this.sampleUrls.set(sampleUrl, hostname));
@@ -135,6 +141,44 @@ class BaseVendor {
             }
         });
     }
+    applyHostnameDetectionRules() {
+        const hostnameRules = 
+        // Expand shorthand syntax for header rules
+        this.hostnameDetectionRules.map((rule) => {
+            if (rule instanceof RegExp) {
+                return { match: rule, result: {} };
+            }
+            else if (rule.endsWith) {
+                return { match: new RegExp(rule.endsWith.replace('.', '\\.') + '$'), result: {} };
+            }
+            return rule;
+        });
+        this.search.hostnames.forEach(hostname => {
+            hostnameRules.forEach(rule => {
+                if (this.matchHostname(hostname, rule.match)) {
+                    this.addResult(__assign({ hostname, certainty: 1 /* Definite */ }, rule.result));
+                }
+            });
+        });
+    }
+    matchHostname(hostname, match) {
+        if (typeof match === 'string') {
+            return !!hostname.match(match);
+        }
+        else {
+            return !!match.exec(hostname);
+        }
+    }
+    expandHeaderDetectionRuleShorthand() {
+        // Expand shorthand syntax for header rules
+        this.headerDetectionRules.forEach((rule, idx) => {
+            if (Object.keys(rule).length === 1) {
+                const header = Object.keys(rule)[0];
+                const match = rule[header];
+                this.headerDetectionRules[idx] = { header, match };
+            }
+        });
+    }
     applyHeaderDetectionRules() {
         return __awaiter(this, void 0, void 0, function* () {
             const fetchPromises = [];
@@ -148,7 +192,7 @@ class BaseVendor {
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield this.fetchHead(sampleUrl);
             const headers = response.headers;
-            this.headerDetectionRules.forEach(rule => {
+            this.headerDetectionRules.forEach((rule) => {
                 if (this.matchHeader(headers, rule.header, rule.match)) {
                     const result = { certainty: 1 /* Definite */, hostname };
                     if (rule.urlSampling === 1 /* All */) {

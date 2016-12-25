@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const index_1 = require("./index");
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        let search = new index_1.Search('https://aws.amazon.com/');
+        let search = new index_1.Search('https://www.salestockindonesia.com/');
         const results = yield search.detectVendors();
         console.dir(results);
     });

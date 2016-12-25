@@ -7,7 +7,41 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const AWS_1 = require("./vendors/AWS");
+const fs = require("graceful-fs");
+const BaseVendor_1 = require("./BaseVendor");
+const yaml = require("js-yaml");
+function getVendorConstructors() {
+    const vendors = {};
+    if (fs.existsSync(`${__dirname}/vendors/vendors.yml`)) {
+        let vendorsObj = yaml.safeLoad(fs.readFileSync(`${__dirname}/vendors/vendors.yml`).toString());
+        Object.keys(vendorsObj).forEach(vendorName => {
+            const properties = vendorsObj[vendorName];
+            if (!properties.baseResult) {
+                properties.baseResult = {};
+            }
+            properties.baseResult.vendor = vendorName;
+            const adhocClass = class AdhocVendor extends BaseVendor_1.BaseVendor {
+                constructor(search) {
+                    super(search);
+                    Object.assign(this, properties);
+                }
+            };
+            vendors[vendorName] = adhocClass;
+        });
+    }
+    const files = fs.readdirSync(`${__dirname}/vendors`);
+    files.forEach((filename) => {
+        if (filename === 'vendors.yml') {
+            return;
+        }
+        let className = filename.substr(0, filename.length - 3);
+        try {
+            vendors[className] = require(`./vendors/${className}`)[className];
+        }
+        catch (e) { }
+    });
+    return vendors;
+}
 class VendorManager {
     constructor(search, activeVendorConstructors) {
         this.activeVendors = new Map();
@@ -50,7 +84,7 @@ class VendorManager {
         });
     }
 }
-VendorManager.vendorConstructors = { AWS: AWS_1.AWS };
+VendorManager.vendorConstructors = getVendorConstructors();
 VendorManager.vendorObjects = new Map();
 VendorManager.vendorInitPromises = new Map();
 exports.VendorManager = VendorManager;
