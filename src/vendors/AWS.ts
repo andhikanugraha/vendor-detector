@@ -28,7 +28,7 @@ export class AWS extends BaseVendor  {
   static readonly ipRangesEndpoint = 'https://ip-ranges.amazonaws.com/ip-ranges.json';
   static ipRanges: IpRange[] = [];
 
-  static async init(fetch: (url: string, options?: any) => Promise<any>): Promise<void> {
+  static async init(): Promise<void> {
     // Fetch IP ranges
     const response = await fetch(AWS.ipRangesEndpoint);
     const responseJson = await response.json();

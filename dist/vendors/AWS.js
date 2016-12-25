@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 const BaseVendor_1 = require("../BaseVendor");
+const node_fetch_1 = require("node-fetch");
 class AWS extends BaseVendor_1.BaseVendor {
     constructor() {
         super(...arguments);
@@ -27,10 +28,10 @@ class AWS extends BaseVendor_1.BaseVendor {
             }
         ];
     }
-    static init(fetch) {
+    static init() {
         return __awaiter(this, void 0, void 0, function* () {
             // Fetch IP ranges
-            const response = yield fetch(AWS.ipRangesEndpoint);
+            const response = yield node_fetch_1.default(AWS.ipRangesEndpoint);
             const responseJson = yield response.json();
             AWS.ipRanges = responseJson.prefixes.map((prefix) => {
                 return {
