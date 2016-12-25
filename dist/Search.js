@@ -7,10 +7,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
+const dns = require("dns");
 const url = require("url");
 const cheerio = require("cheerio");
 const FetchPool_1 = require("./FetchPool");
 const VendorManager_1 = require("./VendorManager");
+const pify = require("pify");
+const dnsAsync = pify(dns);
 class Search {
     // How to use:
     // search = new Search('example.com');
@@ -24,13 +27,15 @@ class Search {
         this.urlsByHostname = new Map();
         this.urlsByTag = new Map();
         this.hostnamesByTag = new Map();
+        // Hostnames resolved to IPv4
+        this.resolvedHostnames = [];
         this.targetUrl = targetUrl;
         this.parsedTargetUrl = url.parse(targetUrl);
         this.fetchPool = new FetchPool_1.FetchPool({
             defaultUserAgent: options.defaultUserAgent,
             concurrency: options.concurrency
         });
-        this.vendorManager = new VendorManager_1.VendorManager(options.vendors);
+        this.vendorManager = new VendorManager_1.VendorManager(this, options.vendors);
     }
     // Populate this with the identified vendors and return this
     detectVendors() {
@@ -71,7 +76,18 @@ class Search {
     analyzeUrls() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.vendorManager.init();
+            yield this.resolveHostnames();
             return this.vendorManager.detect(this);
+        });
+    }
+    resolveHostnames() {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (let hostname of this.hostnames) {
+                const ipv4addr = yield dnsAsync.resolve4(hostname);
+                ipv4addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
+                const ipv6addr = yield dnsAsync.resolve4(hostname);
+                ipv6addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
+            }
         });
     }
     getHostname(urlString) {

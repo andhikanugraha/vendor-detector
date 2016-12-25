@@ -9,29 +9,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const AWS_1 = require("./vendors/AWS");
 class VendorManager {
-    constructor(activeVendorConstructors) {
-        this.activeVendorObjects = [];
+    constructor(search, activeVendorConstructors) {
+        this.activeVendors = new Map();
         this.inited = false;
         if (!activeVendorConstructors) {
             activeVendorConstructors = Object.keys(VendorManager.vendorConstructors);
         }
-        this.activeVendorObjects = activeVendorConstructors.map(this.getVendorObject);
-    }
-    getVendorObject(vendorRef) {
-        let vendorName;
-        let vendorConstructor;
-        if (typeof vendorRef === 'string') {
-            vendorName = vendorRef;
-            vendorConstructor = VendorManager.vendorConstructors[vendorName];
-        }
-        else {
-            vendorName = vendorRef.name;
-            vendorConstructor = vendorRef;
-        }
-        if (!VendorManager.vendorObjects.get(vendorName)) {
-            VendorManager.vendorObjects.set(vendorName, new vendorConstructor());
-        }
-        return VendorManager.vendorObjects.get(vendorName);
+        activeVendorConstructors.forEach(ctorName => {
+            const ctor = VendorManager.vendorConstructors[ctorName];
+            this.activeVendors.set(ctor, new ctor(search));
+        });
     }
     init() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -39,21 +26,23 @@ class VendorManager {
                 return;
             }
             let initPromises = [];
-            this.activeVendorObjects.forEach((vendorObject) => {
-                if (!VendorManager.vendorInitPromises.get(vendorObject)) {
-                    VendorManager.vendorInitPromises.set(vendorObject, vendorObject.init());
+            this.activeVendors.forEach((vendorObject, ctor) => {
+                if (!VendorManager.vendorInitPromises.get(ctor)) {
+                    VendorManager.vendorInitPromises.set(ctor, vendorObject.init());
                 }
-                initPromises.push(VendorManager.vendorInitPromises.get(vendorObject));
+                initPromises.push(VendorManager.vendorInitPromises.get(ctor));
             });
-            yield Promise.all(initPromises);
+            yield Promise.all(initPromises).catch(err => { throw err; });
             this.inited = true;
         });
     }
     detect(search) {
         return __awaiter(this, void 0, void 0, function* () {
             const detectionResults = [];
-            const detectPromises = this.activeVendorObjects.map((vendorObj) => __awaiter(this, void 0, void 0, function* () {
-                const vendorResults = yield vendorObj.detect(search);
+            const activeVendorObjects = [];
+            this.activeVendors.forEach(vendorObject => activeVendorObjects.push(vendorObject));
+            const detectPromises = activeVendorObjects.map((vendorObj) => __awaiter(this, void 0, void 0, function* () {
+                const vendorResults = yield vendorObj.detect();
                 vendorResults.forEach(result => detectionResults.push(result));
             }));
             yield Promise.all(detectPromises);

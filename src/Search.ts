@@ -1,12 +1,16 @@
+import * as dns from 'dns';
 import * as url from 'url';
 
 import * as cheerio from 'cheerio';
 
 import { FetchPool, FetchPoolOptions, FetchResponse } from './FetchPool';
 import { VendorManager, VendorReference } from './VendorManager';
+import * as pify from 'pify';
+
+const dnsAsync = pify(dns);
 
 interface SearchOptions extends FetchPoolOptions {
-  vendors?: VendorReference[]
+  vendors?: string[]
 }
 
 export class Search {
@@ -24,6 +28,9 @@ export class Search {
   urlsByTag = new Map<string, Set<string>>();
   hostnamesByTag = new Map<string, Set<string>>();
 
+  // Hostnames resolved to IPv4
+  resolvedHostnames: [string, string][] = [];
+
   // How to use:
   // search = new Search('example.com');
   // results = await search.detectVendors();
@@ -37,7 +44,7 @@ export class Search {
       defaultUserAgent: options.defaultUserAgent,
       concurrency: options.concurrency
     });
-    this.vendorManager = new VendorManager(options.vendors);
+    this.vendorManager = new VendorManager(this, options.vendors);
   }
 
   // Populate this with the identified vendors and return this
@@ -81,7 +88,19 @@ export class Search {
 
   async analyzeUrls() {
     await this.vendorManager.init();
+
+    await this.resolveHostnames();
     return this.vendorManager.detect(this);
+  }
+
+  async resolveHostnames() {
+    for (let hostname of this.hostnames) {
+      const ipv4addr: string[] = await dnsAsync.resolve4(hostname);
+      ipv4addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
+
+      const ipv6addr: string[] = await dnsAsync.resolve4(hostname);
+      ipv6addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
+    }
   }
 
   getHostname(urlString: string) {

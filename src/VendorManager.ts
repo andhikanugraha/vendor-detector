@@ -1,62 +1,33 @@
-import { AWS } from './vendors/AWS';
-import { DetectionResult } from './DetectionStream';
-import { Search } from './Search';
+import * as url from 'url';
+
 import * as mergeStream from 'merge-stream';
+import * as fetchNS from 'node-fetch';
+
+import { Vendor, DetectionResult, DetectionResultSet } from './BaseVendor'
+import { AWS } from './vendors/AWS';
+import { Search } from './Search';
 
 export type VendorConstructor = {new(): Vendor};
-export type VendorReference = (VendorConstructor | string);
-
-export interface Vendor {
-  // Do things like load IP address ranges
-  init(): Promise<void>;
-  detect(Search): Promise<DetectionResult[]>;
-}
-
-export interface DetectionResult {
-  type: string,
-  vendor: string,
-  product?: string,
-  region?: string,
-  ipRange?: string,
-  hostname?: string,
-  url?: string,
-  message?: string
-}
+export type VendorReference = string;
 
 export class VendorManager {
   private static vendorConstructors = { AWS };
   private static vendorObjects = new Map<string, Vendor>();
-  private static vendorInitPromises = new Map<Vendor, Promise<void>>();
+  private static vendorInitPromises = new Map<VendorConstructor, Promise<void>>();
 
-  private activeVendorObjects: Vendor[] = [];
+  private activeVendors = new Map<VendorConstructor, Vendor>();
 
   private inited = false;
 
-  constructor(activeVendorConstructors?: VendorReference[]) {
+  constructor(search: Search, activeVendorConstructors?: string[]) {
     if (!activeVendorConstructors) {
       activeVendorConstructors = Object.keys(VendorManager.vendorConstructors);
     }
 
-    this.activeVendorObjects = activeVendorConstructors.map(this.getVendorObject);
-  }
-
-  private getVendorObject(vendorRef: VendorReference): Vendor {
-    let vendorName: string;
-    let vendorConstructor: {new(): Vendor};
-    if (typeof vendorRef === 'string') {
-      vendorName = vendorRef;
-      vendorConstructor = VendorManager.vendorConstructors[vendorName];
-    }
-    else {
-      vendorName = vendorRef.name;
-      vendorConstructor = vendorRef;
-    }
-
-    if (!VendorManager.vendorObjects.get(vendorName)) {
-      VendorManager.vendorObjects.set(vendorName, new vendorConstructor());
-    }
-
-    return VendorManager.vendorObjects.get(vendorName);
+    activeVendorConstructors.forEach(ctorName => {
+      const ctor = VendorManager.vendorConstructors[ctorName];
+      this.activeVendors.set(ctor, new ctor(search));
+    });
   }
 
   async init(): Promise<void> {
@@ -66,24 +37,26 @@ export class VendorManager {
 
     let initPromises: Promise<void>[] = [];
 
-    this.activeVendorObjects.forEach((vendorObject: Vendor) => {
-      if (!VendorManager.vendorInitPromises.get(vendorObject)) {
-        VendorManager.vendorInitPromises.set(vendorObject, vendorObject.init());
+    this.activeVendors.forEach((vendorObject, ctor) => {
+      if (!VendorManager.vendorInitPromises.get(ctor)) {
+        VendorManager.vendorInitPromises.set(ctor, vendorObject.init());
       }
 
-      initPromises.push(VendorManager.vendorInitPromises.get(vendorObject));
+      initPromises.push(VendorManager.vendorInitPromises.get(ctor));
     });
 
-    await Promise.all(initPromises);
+    await Promise.all(initPromises).catch(err => { throw err });
 
     this.inited = true;
   }
 
   async detect(search: Search): Promise<DetectionResult[]> {
     const detectionResults: DetectionResult[] = [];
+    const activeVendorObjects = [];
+    this.activeVendors.forEach(vendorObject => activeVendorObjects.push(vendorObject));
 
-    const detectPromises = this.activeVendorObjects.map(async (vendorObj) => {
-      const vendorResults = await vendorObj.detect(search);
+    const detectPromises = activeVendorObjects.map(async (vendorObj) => {
+      const vendorResults = await vendorObj.detect();
       vendorResults.forEach(result => detectionResults.push(result));
     });
 
