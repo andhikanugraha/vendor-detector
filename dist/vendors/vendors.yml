@@ -19,6 +19,17 @@ Facebook:
   hostnameDetectionRules:
     - endsWith: .facebook.com
 
+Brightcove:
+  hostnameDetectionRules:
+    - endsWith: .brightcove.net
+
+Automattic:
+  hostnameDetectionRules:
+    - endsWith: .wp.com
+      product: Jetpack
+    - endsWith: .gravatar.com
+      product: Gravatar
+
 Google:
   hostnameDetectionRules:
     - endsWith: .google.com
@@ -28,6 +39,8 @@ Adobe:
     product: Marketing Cloud
   hostnameDetectionRules:
     - endsWith: .omtrdc.net
+  headerDetectionRules:
+    - Server: Omniture
 
 # Reverse proxies
 Varnish:
@@ -42,6 +55,10 @@ Apache:
   productCategories: ['webservers']
   headerDetectionRules:
     - Server: Apache/
+nginx:
+  productCategories: ['webservers']
+  headerDetectionRules:
+    - Server: nginx
 Microsoft:
   baseResult:
     product: IIS

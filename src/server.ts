@@ -14,31 +14,21 @@ function template(params) {
   if (params.data) {
     body = `
 <hr>
-<h3>${params.q || ''}</h3>
-<hr>
-<h4>Details by hostname</h4>
+<h3 style="padding-bottom: 0.3em">Results for ${params.q || ''}</h3>
 <table class="table">
   <thead>
     <tr>
       <th>Hostname</th>
-      <th>IP Address</th>
-      <th>IP Range</th>
       <th>Vendor</th>
-      <th>Region</th>
-      <th>Product</th>
-      <th>Product Categories</th>
+      <th>Product/Region</th>
     </tr>
   </thead>
   <tbody>
     ${params.data.map(row => `
       <tr>
         <td><strong>${row.hostname || ''}</strong></td>
-        <td><code>${row.ipAddress || ''}</code></td>
-        <td><code>${row.ipRange || ''}</code></td>
         <td>${row.vendor || ''}</td>
-        <td>${row.region || ''}</td>
-        <td>${row.product || ''}</td>
-        <td>${row.productCategories && row.productCategories.join(', ') || ''}</td>
+        <td>${row.product || row.region || ''}</td>
       </tr>`).join('')}
   </tbody>
 </table>
@@ -48,6 +38,9 @@ function template(params) {
   return `
 <!doctype html>
 <title>Vendor detector (alpha)</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
 <link rel="stylesheet" href="css/bootstrap.css">
 <div class="container">
   <h1 style="padding-top: 1em">Vendor detector <span class="tag tag-info">alpha</span></h1>

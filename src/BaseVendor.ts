@@ -247,6 +247,7 @@ export class BaseVendor implements Vendor {
     this.search.hostnames.forEach(hostname => {
       hostnameRules.forEach(rule => {
         if (this.matchHostname(hostname, rule.match)) {
+          console.dir(rule);
           this.addResult({ hostname, certainty: DetectionCertainty.Definite, ...rule.result });
         }
       });
@@ -274,17 +275,21 @@ export class BaseVendor implements Vendor {
   }
 
   async applyHeaderDetectionRules(): Promise<void> {
-
     const fetchPromises: Promise<void>[] = [];
     this.sampleUrls.forEach((sampleUrl, hostname) => {
       fetchPromises.push(this.applyHeaderDetectionRulesForUrl(hostname, sampleUrl));
     });
 
-    await Promise.all(fetchPromises).catch(e => { throw e; });
+    await Promise.all(fetchPromises).catch(e => { /* throw e; */ });
   }
 
   async applyHeaderDetectionRulesForUrl(sampleUrl, hostname: string): Promise<void> {
     const response = await this.fetchHead(sampleUrl);
+    if (!response || !response.headers) {
+      // Request failed, no matter
+      return;
+    }
+
     const headers = response.headers;
 
     this.headerDetectionRules.forEach((rule: HeaderDetectionRuleObject) => {
@@ -311,7 +316,7 @@ export class BaseVendor implements Vendor {
     return this.fetch(url, {
       ...options,
       method: 'HEAD'
-    });
+    }).catch(e => {});
   }
 
   matchHeader(headersObject: fetchNS.Headers, header: string, needle: string | RegExp): boolean {

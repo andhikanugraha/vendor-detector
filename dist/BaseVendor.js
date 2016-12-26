@@ -160,6 +160,7 @@ class BaseVendor {
         this.search.hostnames.forEach(hostname => {
             hostnameRules.forEach(rule => {
                 if (this.matchHostname(hostname, rule.match)) {
+                    console.dir(rule);
                     this.addResult(__assign({ hostname, certainty: 1 /* Definite */ }, rule.result));
                 }
             });
@@ -189,12 +190,16 @@ class BaseVendor {
             this.sampleUrls.forEach((sampleUrl, hostname) => {
                 fetchPromises.push(this.applyHeaderDetectionRulesForUrl(hostname, sampleUrl));
             });
-            yield Promise.all(fetchPromises).catch(e => { throw e; });
+            yield Promise.all(fetchPromises).catch(e => { });
         });
     }
     applyHeaderDetectionRulesForUrl(sampleUrl, hostname) {
         return __awaiter(this, void 0, void 0, function* () {
             const response = yield this.fetchHead(sampleUrl);
+            if (!response || !response.headers) {
+                // Request failed, no matter
+                return;
+            }
             const headers = response.headers;
             this.headerDetectionRules.forEach((rule) => {
                 if (this.matchHeader(headers, rule.header, rule.match)) {
@@ -215,7 +220,7 @@ class BaseVendor {
         return this.search.fetch(url, options);
     }
     fetchHead(url, options) {
-        return this.fetch(url, __assign({}, options, { method: 'HEAD' }));
+        return this.fetch(url, __assign({}, options, { method: 'HEAD' })).catch(e => { });
     }
     matchHeader(headersObject, header, needle) {
         header = header.toLowerCase();
