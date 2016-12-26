@@ -239,7 +239,7 @@ export class BaseVendor implements Vendor {
           return { match: rule, result: {} };
         }
         else if (rule.endsWith) {
-          return { match: new RegExp(rule.endsWith.replace('.', '\\.') + '$'), result: {} };
+          return { match: new RegExp(rule.endsWith.replace('.', '\\.') + '$'), result: rule.result };
         }
         return rule;
       });

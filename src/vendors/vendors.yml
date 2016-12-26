@@ -25,10 +25,15 @@ Brightcove:
 
 Automattic:
   hostnameDetectionRules:
+    - endsWith: jetpack.wordpress.com
+      result:
+        product: Jetpack
     - endsWith: .wp.com
-      product: Jetpack
+      result:
+        product: Jetpack
     - endsWith: .gravatar.com
-      product: Gravatar
+      result:
+        product: Gravatar
 
 Google:
   hostnameDetectionRules:
