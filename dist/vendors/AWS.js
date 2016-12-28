@@ -3,6 +3,9 @@ const tslib_1 = require("tslib");
 const node_fetch_1 = require("node-fetch");
 const awsIpRangeEndpoint = 'https://ip-ranges.amazonaws.com/ip-ranges.json';
 exports.AWS = {
+    baseResult: {
+        vendor: 'Amazon Web Services'
+    },
     hostnameRules: [/.amazonaws.com$/],
     load() {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {

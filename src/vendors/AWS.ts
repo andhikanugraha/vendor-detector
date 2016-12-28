@@ -10,6 +10,9 @@ interface AwsIpPrefix {
 const awsIpRangeEndpoint = 'https://ip-ranges.amazonaws.com/ip-ranges.json';
 
 export const AWS: Vendor = {
+  baseResult: {
+    vendor: 'Amazon Web Services'
+  },
   hostnameRules: [/.amazonaws.com$/],
 
   async load(): Promise<Vendor> {

@@ -5,6 +5,10 @@ import * as cheerio from 'cheerio';
 const ipRangesDownloadPage = 'https://www.microsoft.com/en-us/download/confirmation.aspx?id=41653';
 
 export const Azure: Vendor = {
+  baseResult: {
+    vendor: 'Microsoft Azure'
+  },
+
   hostnameRules: [
     { pattern: /.core.windows.net$/,
       result: { vendor: 'Azure Storage' } },

@@ -4,6 +4,9 @@ const node_fetch_1 = require("node-fetch");
 const cheerio = require("cheerio");
 const ipRangesDownloadPage = 'https://www.microsoft.com/en-us/download/confirmation.aspx?id=41653';
 exports.Azure = {
+    baseResult: {
+        vendor: 'Microsoft Azure'
+    },
     hostnameRules: [
         { pattern: /.core.windows.net$/,
             result: { vendor: 'Azure Storage' } },
