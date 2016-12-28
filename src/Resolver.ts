@@ -56,7 +56,7 @@ export class Resolver {
             const result: ResolverResult = {
               hostname,
               dnsRecordType: recordType,
-              dnsRecordValue: valueOf(record)
+              dnsRecordValue: valueOf(record).toLowerCase()
             };
 
             results.push(result);

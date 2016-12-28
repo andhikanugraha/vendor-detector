@@ -48,7 +48,7 @@ class Resolver {
                             const result = {
                                 hostname,
                                 dnsRecordType: recordType,
-                                dnsRecordValue: valueOf(record)
+                                dnsRecordValue: valueOf(record).toLowerCase()
                             };
                             results.push(result);
                         });
