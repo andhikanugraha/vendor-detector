@@ -16,15 +16,13 @@ function template(params) {
     <tr>
       <th>Hostname</th>
       <th>Vendor</th>
-      <th>Product/Region</th>
     </tr>
   </thead>
   <tbody>
     ${params.data.map(row => `
       <tr>
         <td><strong>${row.hostname || ''}</strong></td>
-        <td>${row.vendor || ''}</td>
-        <td>${row.product || row.region || ''}</td>
+        <td>${(row.vendor || '')}${(row.region && ` (${row.region})` || '')}</td>
       </tr>`).join('')}
   </tbody>
 </table>
