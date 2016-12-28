@@ -7,47 +7,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const BaseVendor_1 = require("../BaseVendor");
 const node_fetch_1 = require("node-fetch");
-const AmazonS3 = {
-    product: 'S3',
-    productCategories: ['storage']
-};
-const CloudFront = {
-    product: 'CloudFront',
-    productCategories: ['cdn']
-};
-class AWS extends BaseVendor_1.BaseVendor {
-    constructor() {
-        super(...arguments);
-        this.hostnameDetectionRules = [/.amazonaws.com$/];
-        this.headerDetectionRules = [
-            {
-                header: 'Server',
-                match: 'AmazonS3',
-                result: AmazonS3
-            },
-            {
-                header: 'Via',
-                match: 'CloudFront',
-                result: CloudFront
-            }
-        ];
-    }
-    static init() {
+const awsIpRangeEndpoint = 'https://ip-ranges.amazonaws.com/ip-ranges.json';
+exports.AWS = {
+    hostnameRules: [/.amazonaws.com$/],
+    load() {
         return __awaiter(this, void 0, void 0, function* () {
-            // Fetch IP ranges
-            const response = yield node_fetch_1.default(AWS.ipRangesEndpoint);
+            console.log('Loading AWS IP Ranges...');
+            const response = yield node_fetch_1.default(awsIpRangeEndpoint);
             const responseJson = yield response.json();
-            AWS.ipRanges = responseJson.prefixes.map((prefix) => {
+            const ipRangeRules = responseJson.prefixes.map((prefix) => {
                 return {
                     ipRange: prefix.ip_prefix,
-                    region: prefix.region
+                    result: {
+                        region: prefix.region
+                    }
                 };
             });
+            return { ipRangeRules };
         });
     }
-}
-AWS.ipRangesEndpoint = 'https://ip-ranges.amazonaws.com/ip-ranges.json';
-AWS.ipRanges = [];
-exports.AWS = AWS;
+};

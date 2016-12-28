@@ -1,4 +1,4 @@
-import { BaseVendor, IpRange } from '../BaseVendor';
+import { Vendor } from '../Vendor';
 import fetch from 'node-fetch';
 
 interface AwsIpPrefix {
@@ -7,43 +7,24 @@ interface AwsIpPrefix {
   service: string;
 }
 
-const AmazonS3 = {
-  product: 'S3',
-  productCategories: ['storage']
-};
+const awsIpRangeEndpoint = 'https://ip-ranges.amazonaws.com/ip-ranges.json';
 
-const CloudFront = {
-  product: 'CloudFront',
-  productCategories: ['cdn']
-}
+export const AWS: Vendor = {
+  hostnameRules: [/.amazonaws.com$/],
 
-export class AWS extends BaseVendor  {
-  hostnameDetectionRules = [/.amazonaws.com$/];
-  headerDetectionRules = [
-    {
-      header: 'Server',
-      match: 'AmazonS3',
-      result: AmazonS3
-    },
-    {
-      header: 'Via',
-      match: 'CloudFront',
-      result: CloudFront
-    }
-  ];
-
-  static readonly ipRangesEndpoint = 'https://ip-ranges.amazonaws.com/ip-ranges.json';
-  static ipRanges: IpRange[] = [];
-
-  static async init(): Promise<void> {
-    // Fetch IP ranges
-    const response = await fetch(AWS.ipRangesEndpoint);
+  async load(): Promise<Vendor> {
+    console.log('Loading AWS IP Ranges...');
+    const response = await fetch(awsIpRangeEndpoint);
     const responseJson = await response.json();
-    AWS.ipRanges = responseJson.prefixes.map((prefix: AwsIpPrefix): IpRange => {
+    const ipRangeRules = responseJson.prefixes.map((prefix: AwsIpPrefix) => {
       return {
         ipRange: prefix.ip_prefix,
-        region: prefix.region
+        result: {
+          region: prefix.region
+        }
       };
     });
+
+    return {ipRangeRules};
   }
-}
+};
