@@ -16,6 +16,11 @@ export class Resolver {
     // this.fetchPool = new FetchPool();
   }
 
+  fetch(url: string, options: any = {}): Promise<any> {
+    return fetch(url, options);
+    // return this.fetchPool.fetch(url, options);
+  }
+
   async resolveIp4(hostname: string): Promise<ResolverResult[]> {
     const addresses = await dnsAsync.resolve4(hostname);
 
@@ -72,7 +77,12 @@ export class Resolver {
 
   async resolveHeaders(targetUrl: string): Promise<ResolverResult[]> {
     const results = [];
-    const response = await fetch(targetUrl, { method: 'HEAD' });
+    const response = await this.fetch(targetUrl, { method: 'HEAD' }).catch(e => {
+      console.error(e);
+    });
+    if (!response) {
+      return [];
+    }
     const headers = response.headers;
 
     headers.forEach((value, name) => {
@@ -89,7 +99,13 @@ export class Resolver {
 
   async resolveHtml(targetUrl: string): Promise<ResolverResult[]> {
     const results = [];
-    const response = await fetch(targetUrl);
+    const response = await this.fetch(targetUrl).catch(e => {
+      console.error(e);
+    });
+    if (!response) {
+      return [];
+    }
+
     const responseText = await response.text();
 
     results.push({

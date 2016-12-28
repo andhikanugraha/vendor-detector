@@ -12,6 +12,10 @@ class Resolver {
     constructor() {
         // this.fetchPool = new FetchPool();
     }
+    fetch(url, options = {}) {
+        return node_fetch_1.default(url, options);
+        // return this.fetchPool.fetch(url, options);
+    }
     resolveIp4(hostname) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const addresses = yield dnsAsync.resolve4(hostname);
@@ -64,7 +68,12 @@ class Resolver {
     resolveHeaders(targetUrl) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const results = [];
-            const response = yield node_fetch_1.default(targetUrl, { method: 'HEAD' });
+            const response = yield this.fetch(targetUrl, { method: 'HEAD' }).catch(e => {
+                console.error(e);
+            });
+            if (!response) {
+                return [];
+            }
             const headers = response.headers;
             headers.forEach((value, name) => {
                 const result = {
@@ -80,7 +89,12 @@ class Resolver {
     resolveHtml(targetUrl) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const results = [];
-            const response = yield node_fetch_1.default(targetUrl);
+            const response = yield this.fetch(targetUrl).catch(e => {
+                console.error(e);
+            });
+            if (!response) {
+                return [];
+            }
             const responseText = yield response.text();
             results.push({
                 targetUrl,
