@@ -335,7 +335,8 @@ exports.VendorRuleCanonizers = {
         }
         let recordType;
         let pattern;
-        const possibleProps = ['a', 'cname', 'mx', 'srv', 'soa'];
+        const recordTypes = ['A', 'AAAA', 'MX', 'TXT', 'SRV', 'PTR', 'NS', 'CNAME', 'SOA', 'NAPTR'];
+        const possibleProps = recordTypes.map(t => t.toLowerCase());
         const found = possibleProps.some(prop => {
             if (rule[prop]) {
                 recordType = prop.toUpperCase();
