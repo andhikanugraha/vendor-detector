@@ -12,7 +12,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 const PQueue = require("p-queue");
 const node_fetch_1 = require("node-fetch");
 class FetchPool {
-    constructor(options) {
+    constructor(options = {}) {
         this.pool = new Map();
         if (options.defaultUserAgent) {
             this.defaultUserAgent = options.defaultUserAgent;

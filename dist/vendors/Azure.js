@@ -7,63 +7,31 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments)).next());
     });
 };
-const BaseVendor_1 = require("../BaseVendor");
 const node_fetch_1 = require("node-fetch");
 const cheerio = require("cheerio");
-class Azure extends BaseVendor_1.BaseVendor {
-    constructor() {
-        super(...arguments);
-        this.hostnameDetectionRules = [
-            {
-                match: /.core.windows.net$/,
-                result: {
-                    product: 'Storage',
-                    productCategories: ['storage']
-                }
-            },
-            {
-                match: /.cloudapp.azure.com$/,
-                result: {
-                    product: 'Virtual Machines',
-                    productCategories: ['compute']
-                }
-            },
-            {
-                match: /.azurewebsites.net$/,
-                result: {
-                    product: 'App Service',
-                    productCategories: ['appPaaS', 'compute', 'web']
-                }
-            },
-            {
-                match: /.azureedge.net$/,
-                result: {
-                    product: 'CDN',
-                    productCategories: ['cdn']
-                }
-            },
-            {
-                match: /.msecnd.net$/,
-                result: {
-                    product: 'CDN',
-                    productCategories: ['cdn']
-                }
-            },
-            {
-                match: /.cloudapp.net$/,
-                result: {
-                    product: 'Virtual Machines or Web/Worker Roles',
-                    productCategories: ['compute']
-                }
-            }
-        ];
-    }
-    static init() {
+const ipRangesDownloadPage = 'https://www.microsoft.com/en-us/download/confirmation.aspx?id=41653';
+exports.Azure = {
+    hostnameRules: [
+        { pattern: /.core.windows.net$/,
+            result: { vendor: 'Azure Storage' } },
+        { pattern: /.cloudapp.azure.com$/,
+            result: { vendor: 'Azure Virtual Machines (ARM)' } },
+        { pattern: /.azurewebsites.net$/,
+            result: { vendor: 'Azure App Service' } },
+        { pattern: /.azureedge.net$/,
+            result: { vendor: 'Azure CDN' } },
+        { pattern: /.msecnd.net$/,
+            result: { vendor: 'Azure CDN' } },
+        { pattern: /.cloudapp.net$/,
+            result: { vendor: 'Azure Virtual Machines (Classic) or Web/Worker Roles' } }
+    ],
+    load() {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log('Loading Azure IP ranges...');
             try {
                 const catcher = e => { throw e; };
                 // Fetch the download page
-                const downloadPageResponse = yield node_fetch_1.default(Azure.ipRangesDownloadPage).catch(catcher);
+                const downloadPageResponse = yield node_fetch_1.default(ipRangesDownloadPage).catch(catcher);
                 const downloadPageText = yield downloadPageResponse.text();
                 const downloadPage$ = cheerio.load(downloadPageText);
                 const xmlUrl = downloadPage$('div.start-download a').attr('href');
@@ -73,22 +41,20 @@ class Azure extends BaseVendor_1.BaseVendor {
                 const xmlResponse = yield node_fetch_1.default(xmlUrl).catch(catcher);
                 const xmlText = yield xmlResponse.text();
                 const xml$ = cheerio.load(xmlText);
-                Azure.ipRanges = [];
+                const ipRangeRules = [];
                 xml$('Region').each((idx, RegionElement) => {
                     const region = xml$(RegionElement).attr('name');
                     xml$('IpRange', RegionElement).each((idx, IpRangeElement) => {
                         const ipRange = xml$(IpRangeElement).attr('subnet');
-                        Azure.ipRanges.push({ ipRange, region });
+                        ipRangeRules.push({ ipRange, result: { region } });
                     });
                 });
+                return { ipRangeRules };
             }
             catch (e) {
                 console.error(e);
-                return;
+                return null;
             }
         });
     }
-}
-Azure.ipRangesDownloadPage = 'https://www.microsoft.com/en-us/download/confirmation.aspx?id=41653';
-Azure.ipRanges = [];
-exports.Azure = Azure;
+};

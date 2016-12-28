@@ -12,6 +12,7 @@ const url = require("url");
 const cheerio = require("cheerio");
 const FetchPool_1 = require("./FetchPool");
 const VendorManager_1 = require("./VendorManager");
+const Resolver_1 = require("./Resolver");
 const pify = require("pify");
 const dnsAsync = pify(dns);
 class Search {
@@ -22,6 +23,7 @@ class Search {
             defaultUserAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36',
             concurrency: 1
         }) {
+        this.resolver = new Resolver_1.Resolver;
         this.hostnames = new Set();
         this.urls = new Set();
         this.urlsByHostname = new Map();
@@ -35,7 +37,7 @@ class Search {
             defaultUserAgent: options.defaultUserAgent,
             concurrency: options.concurrency
         });
-        this.vendorManager = new VendorManager_1.VendorManager(this, options.vendors);
+        this.vendorManager = VendorManager_1.VendorManager.getInstance();
     }
     // Populate this with the identified vendors and return this
     detectVendors() {
@@ -76,22 +78,12 @@ class Search {
     analyzeUrls() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.vendorManager.init();
-            yield this.resolveHostnames();
-            return this.vendorManager.detect(this);
-        });
-    }
-    resolveHostnames() {
-        return __awaiter(this, void 0, void 0, function* () {
-            for (let hostname of this.hostnames) {
-                const ipv4addr = yield dnsAsync.resolve4(hostname).catch(e => { });
-                if (ipv4addr) {
-                    ipv4addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
-                }
-                const ipv6addr = yield dnsAsync.resolve4(hostname).catch(e => { });
-                if (ipv6addr) {
-                    ipv6addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
-                }
-            }
+            const sampleUrls = [];
+            this.urlsByHostname.forEach(setOfUrls => {
+                sampleUrls.push(setOfUrls.values().next().value);
+            });
+            return this.vendorManager.applyOuterRules(sampleUrls, new Resolver_1.Resolver);
+            // return this.vendorManager.detect(this);
         });
     }
     getHostname(urlString) {
