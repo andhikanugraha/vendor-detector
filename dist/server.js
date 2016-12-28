@@ -1,28 +1,101 @@
 "use strict";
 const tslib_1 = require("tslib");
+const url = require("url");
 const express = require("express");
 const Search_1 = require("./Search");
 const app = express();
 app.use('/css', express.static(__dirname + '/../node_modules/bootstrap/dist/css'));
 app.use('/js', express.static(__dirname + '/../node_modules/bootstrap/dist/js'));
+function eqHostname(a, b) {
+    if (a === b) {
+        return true;
+    }
+    if (a === 'www.' + b) {
+        return true;
+    }
+    if ('www.' + a === b) {
+        return true;
+    }
+    return false;
+}
+function separateData(params) {
+    const selfHostname = url.parse(params.q).hostname;
+    params.selfHostname = selfHostname;
+    let existing = [];
+    let filtered = params.data.filter(row => {
+        if (!existing.some(r => (eqHostname(r.hostname, row.hostname) &&
+            r.region === row.region &&
+            r.vendor === row.vendor &&
+            r.rule.ruleType === row.rule.ruleType))) {
+            existing.push(row);
+            return true;
+        }
+        return false;
+    });
+    const filter = row => eqHostname(row.hostname, selfHostname);
+    params.selfRows = filtered.filter(filter);
+    params.otherRows = filtered.filter(row => !filter(row));
+}
+function reason(rule) {
+    switch (rule.ruleType) {
+        case 'ipRange':
+            return `IP range: <code>${rule.ipRange}</code>`;
+        case 'dns':
+            return `DNS <code>${rule.recordType.toUpperCase()}</code> rule`;
+        case 'script':
+            return 'Script tag';
+        case 'meta':
+            return 'Meta tag';
+        case 'header':
+            return `HTTP <code>${rule.headerName}</code> header`;
+        case 'html':
+            return 'HTML source code';
+        case 'url':
+            return 'URL';
+        default:
+            let ruleType = rule.ruleType;
+            return ruleType.substr(0, 1).toUpperCase() + ruleType.substr(1);
+    }
+}
 function template(params) {
     let body = '';
+    separateData(params);
     if (params.data) {
         body = `
 <hr>
-<h3 style="padding-bottom: 0.3em">Results for ${params.q || ''}</h3>
+<h4 style="padding-bottom: 0.3em">Results for <strong>${params.selfHostname}</strong></h4>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Vendor</th>
+      <th>Detected through</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${params.selfRows.map(row => `
+      <tr>
+        <td>${(row.vendor || '')}${(row.region && ` <code>${row.region}</code>` || '')}</td>
+        <td>${reason(row.rule)}</td>
+      </tr>`).join('')}
+  </tbody>
+</table>
+
+<hr>
+<h5 style="padding-bottom: 0.3em">Resources linked by <strong>${params.selfHostname}</strong></h5>
 <table class="table">
   <thead>
     <tr>
       <th>Hostname</th>
       <th>Vendor</th>
+      <th>Detected through</th>
     </tr>
   </thead>
   <tbody>
-    ${params.data.map(row => `
+    ${params.otherRows.map(row => `
       <tr>
         <td><strong>${row.hostname || ''}</strong></td>
         <td>${(row.vendor || '')}${(row.region && ` (${row.region})` || '')}</td>
+        <td>${reason(row.rule)}</td>
       </tr>`).join('')}
   </tbody>
 </table>
@@ -67,7 +140,6 @@ app.get('/', (req, res, next) => tslib_1.__awaiter(this, void 0, void 0, functio
                 q = 'http://' + q;
             }
             data = yield Search_1.detectVendors(q);
-            console.log(data);
         }
         if (req.accepts('html')) {
             res.send(template({ q, data }));
@@ -80,4 +152,4 @@ app.get('/', (req, res, next) => tslib_1.__awaiter(this, void 0, void 0, functio
         next(e);
     }
 }));
-app.listen(process.env.PORT || 3000);
+app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));
