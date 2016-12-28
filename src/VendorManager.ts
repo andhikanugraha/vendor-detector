@@ -35,8 +35,8 @@ export class VendorManager {
 
   // "Inner" rules
   metaRules: Vendor.MetaRuleObject[];
-  htmlRules: Vendor.HtmlRule[];
-  scriptRules: Vendor.ScriptRule[];
+  htmlRules: Vendor.HtmlRuleObject[];
+  scriptRules: Vendor.ScriptRuleObject[];
 
   private constructor() {
 
@@ -343,6 +343,44 @@ export class VendorManager {
   async applyInnerRulesUrl(targetUrl: string, resolver: Resolver): Promise<Vendor.DetectionResult[]> {
     let results: Vendor.DetectionResult[] = [];
 
+    const hostname = url.parse(targetUrl).hostname.toLowerCase();
+
+    const addResult = (rule: Vendor.VendorRuleObject) => {
+      results.push({
+        hostname,
+        url: targetUrl,
+        ...rule.result,
+        rule
+      });
+    };
+
+    const htmlResults = await resolver.resolveHtml(targetUrl);
+    htmlResults.forEach(htmlResult => {
+      if (htmlResult.responseText) {
+        const responseText = htmlResult.responseText;
+        this.htmlRules.forEach(rule => {
+          if (matchPattern(responseText, rule.pattern)) {
+            addResult(rule);
+          }
+        });
+      }
+      else if (htmlResult.metaName) {
+        this.metaRules.forEach(rule => {
+          if (rule.name.toLowerCase() === htmlResult.metaName.toLowerCase() &&
+              matchPattern(htmlResult.metaValue, rule.pattern)) {
+            addResult(rule);
+          }
+        });
+      }
+      else if (htmlResult.scriptSrc) {
+        this.scriptRules.forEach(rule => {
+          if (matchPattern(htmlResult.scriptSrc, rule.pattern)) {
+            addResult(rule);
+          }
+        });
+      }
+    });
+
     return results;
   }
 }
@@ -355,18 +393,6 @@ function matchPattern(value: string, pattern: string | RegExp): boolean {
     return !!pattern.exec(value);
   }
 }
-
-interface ResolutionResult {
-  hostname?: string;
-  url?: string;
-  ip4address?: string;
-  dnsRecordType?: string;
-  dnsRecordValue?: string;
-  headerName?: string;
-  headerValue?: string;
-}
-
-type Canonizer = (rule: any) => Vendor.VendorRuleObject;
 
 function canonizeSingularRule(rule: any) {
   if (typeof rule === 'string' || rule instanceof RegExp) {

@@ -260,6 +260,36 @@ class VendorManager {
     applyInnerRulesUrl(targetUrl, resolver) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             let results = [];
+            const hostname = url.parse(targetUrl).hostname.toLowerCase();
+            const addResult = (rule) => {
+                results.push(tslib_1.__assign({ hostname, url: targetUrl }, rule.result, { rule }));
+            };
+            const htmlResults = yield resolver.resolveHtml(targetUrl);
+            htmlResults.forEach(htmlResult => {
+                if (htmlResult.responseText) {
+                    const responseText = htmlResult.responseText;
+                    this.htmlRules.forEach(rule => {
+                        if (matchPattern(responseText, rule.pattern)) {
+                            addResult(rule);
+                        }
+                    });
+                }
+                else if (htmlResult.metaName) {
+                    this.metaRules.forEach(rule => {
+                        if (rule.name.toLowerCase() === htmlResult.metaName.toLowerCase() &&
+                            matchPattern(htmlResult.metaValue, rule.pattern)) {
+                            addResult(rule);
+                        }
+                    });
+                }
+                else if (htmlResult.scriptSrc) {
+                    this.scriptRules.forEach(rule => {
+                        if (matchPattern(htmlResult.scriptSrc, rule.pattern)) {
+                            addResult(rule);
+                        }
+                    });
+                }
+            });
             return results;
         });
     }

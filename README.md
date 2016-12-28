@@ -27,7 +27,7 @@ Detect _what_ and _how_ vendors are used by a site.
 ## To-do
 - [x] Refactor vendor definitions
 - [x] Maintain compatibility & absorb rules with wappalyzer
-- [ ] Implement inner rules (html, meta, etc)
+- [x] Implement inner rules (html, meta, etc)
 - [ ] Refactor Search class
 - [ ] Improve results display
 - [ ] Implement phantomjs as an option

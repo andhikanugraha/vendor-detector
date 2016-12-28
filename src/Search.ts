@@ -97,8 +97,11 @@ export class Search {
       sampleUrls.push(setOfUrls.values().next().value);
     });
 
-    return this.vendorManager.applyOuterRules(sampleUrls, new Resolver);
-    // return this.vendorManager.detect(this);
+    const outerResults = await this.vendorManager.applyOuterRules(sampleUrls, this.resolver);
+
+    const innerResults = await this.vendorManager.applyInnerRules([this.targetUrl], this.resolver);
+
+    return [...outerResults, ...innerResults];
   }
 
   getHostname(urlString: string) {

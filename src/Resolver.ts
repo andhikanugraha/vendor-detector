@@ -1,5 +1,6 @@
 import * as dns from 'dns';
 import * as pify from 'pify';
+import * as cheerio from 'cheerio';
 
 import fetch from 'node-fetch';
 
@@ -85,6 +86,50 @@ export class Resolver {
 
     return results;
   }
+
+  async resolveHtml(targetUrl: string): Promise<ResolverResult[]> {
+    const results = [];
+    const response = await fetch(targetUrl);
+    const responseText = await response.text();
+
+    results.push({
+      targetUrl,
+      responseText
+    });
+
+    const $ = cheerio.load(responseText);
+    $('meta').each((i, metaElement) => {
+      const name = $(metaElement).attr('name');
+      const httpEquiv = $(metaElement).attr('http-equiv');
+      const content = $(metaElement).attr('content');
+
+      if (name) {
+        results.push({
+          targetUrl,
+          metaName: name,
+          metaValue: content
+        });
+      }
+      else if (httpEquiv) {
+        results.push({
+          targetUrl,
+          metaName: httpEquiv,
+          metaValue: content
+        });
+      }
+    });
+
+    $('script').each((i, scriptElement) => {
+      const scriptSrc = $(scriptElement).attr('src');
+
+      results.push({
+        targetUrl,
+        scriptSrc
+      });
+    });
+
+    return results;
+  }
 }
 
 export interface ResolverResult {
@@ -95,4 +140,8 @@ export interface ResolverResult {
   dnsRecordValue?: string;
   headerName?: string;
   headerValue?: string;
+  metaName?: string;
+  metaValue?: string;
+  scriptSrc?: string;
+  responseText?: string;
 }

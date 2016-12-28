@@ -75,8 +75,9 @@ class Search {
             this.urlsByHostname.forEach(setOfUrls => {
                 sampleUrls.push(setOfUrls.values().next().value);
             });
-            return this.vendorManager.applyOuterRules(sampleUrls, new Resolver_1.Resolver);
-            // return this.vendorManager.detect(this);
+            const outerResults = yield this.vendorManager.applyOuterRules(sampleUrls, this.resolver);
+            const innerResults = yield this.vendorManager.applyInnerRules([this.targetUrl], this.resolver);
+            return [...outerResults, ...innerResults];
         });
     }
     getHostname(urlString) {
