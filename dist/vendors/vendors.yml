@@ -2,3 +2,28 @@
 Fastly:
   hostnameRules:
     - \.fastly\.net$
+Akamai:
+  headerRules:
+    - Server: Akamai
+    - X-Akamai-Transformed: ''
+  hostnameRules:
+    - \.edgesuite\.net$
+    - \.akamai[a-z]+\.net$
+Amazon CloudFront:
+  headerRules:
+    - Via: CloudFront
+Amazon S3:
+  headerRules:
+    - Server: AmazonS3
+Amazon Route 53:
+  dnsRules:
+    - ns: awsdns
+Microsoft IIS:
+  headerRules:
+    - Server: Microsoft-IIS/
+Microsoft Office 365:
+  dnsRules:
+    - mx: outlook\.com$
+Google G Suite:
+  dnsRules:
+    - mx: aspmx.l.google.com$
