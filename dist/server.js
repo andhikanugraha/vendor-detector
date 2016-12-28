@@ -19,6 +19,9 @@ function eqHostname(a, b) {
     return false;
 }
 function separateData(params) {
+    if (!params.data || !params.q) {
+        return;
+    }
     const selfHostname = url.parse(params.q).hostname;
     params.selfHostname = selfHostname;
     let existing = [];
@@ -94,7 +97,7 @@ function template(params) {
     ${params.otherRows.map(row => `
       <tr>
         <td><strong>${row.hostname || ''}</strong></td>
-        <td>${(row.vendor || '')}${(row.region && ` (${row.region})` || '')}</td>
+        <td>${(row.vendor || '')}${(row.region && ` <code>${row.region}</code>` || '')}</td>
         <td>${reason(row.rule)}</td>
       </tr>`).join('')}
   </tbody>
