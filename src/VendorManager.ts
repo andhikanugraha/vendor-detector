@@ -1,8 +1,10 @@
 import * as fs from 'graceful-fs';
+import * as url from 'url';
 
-import { BaseVendor, DetectionResult } from './BaseVendor';
 import * as Vendor from './Vendor';
 import { Search } from './Search';
+import { Resolver, ResolverResult } from './Resolver';
+
 import * as globby from 'globby';
 import fetch from 'node-fetch';
 import { Netmask } from 'netmask';
@@ -23,10 +25,15 @@ export class VendorManager {
   vendors = new Map<string, Vendor.Vendor>();
 
   // Canonized rules
+
+  // "Outer"" rules
   hostnameRules: Vendor.HostnameRuleObject[];
+  urlRules: Vendor.UrlRuleObject[];
   ipRangeRules: Vendor.IpRangeRule[];
   headerRules: Vendor.HeaderRuleObject[];
   dnsRules: Vendor.DnsRuleObject[];
+
+  // "Inner" rules
   metaRules: Vendor.MetaRuleObject[];
   htmlRules: Vendor.HtmlRule[];
   scriptRules: Vendor.ScriptRule[];
@@ -50,9 +57,10 @@ export class VendorManager {
     this.loadRules();
   }
 
-  loadRules(): void {
+  private loadRules(): void {
     const ruleTypes = [
       'hostname',
+      'url',
       'ipRange',
       'header',
       'dns',
@@ -81,6 +89,7 @@ export class VendorManager {
             ...baseResult,
             ...canonizedRule.result
           };
+          canonizedRule.ruleType = ruleType;
 
           if (typeof canonizedRule.pattern === 'string') {
             canonizedRule.pattern = new RegExp(canonizedRule.pattern);
@@ -111,7 +120,7 @@ export class VendorManager {
     });
   }
 
-  async loadVendorObjects(): Promise<void> {
+  private async loadVendorObjects(): Promise<void> {
     await this.loadWappalyzer();
 
     const jsFiles: Array<string> = await globby(__dirname + '/vendors/**/*.js'); // use *.js after compilation
@@ -121,7 +130,7 @@ export class VendorManager {
     yamlFiles.forEach(file => this.loadYaml(file));
   }
 
-  async loadWappalyzer() {
+  private async loadWappalyzer() {
     // Load apps.json from GitHub instead of loading npm
     const WappalyzerAppsJsonUri = 'https://raw.githubusercontent.com/AliasIO/Wappalyzer/master/src/apps.json';
     const response = await fetch(WappalyzerAppsJsonUri);
@@ -133,7 +142,7 @@ export class VendorManager {
     });
   }
 
-  loadWappalyzerApp(vendorName: string, appObj: any): Vendor.Vendor {
+  private loadWappalyzerApp(vendorName: string, appObj: any): Vendor.Vendor {
     const newVendor: Vendor.Vendor = {};
 
     if (appObj.implies) {
@@ -143,6 +152,9 @@ export class VendorManager {
       newVendor.excludes = appObj.excludes;
     }
 
+    if (appObj.url) {
+      newVendor.urlRules = [appObj.url];
+    }
     if (appObj.html) {
       newVendor.htmlRules = [appObj.html];
     }
@@ -178,7 +190,7 @@ export class VendorManager {
     return newVendor;
   }
 
-  loadYaml(pathToYaml: string): void {
+  private loadYaml(pathToYaml: string): void {
     const vendorsObj = yaml.safeLoad(fs.readFileSync(pathToYaml).toString());
     if (!vendorsObj) {
       return;
@@ -188,13 +200,13 @@ export class VendorManager {
     vendorNames.forEach(vendorName => this.mergeVendor(vendorName, vendorsObj[vendorName]));
   }
 
-  loadJs(pathToJs: string): void {
+  private loadJs(pathToJs: string): void {
     const vendorsObj = require(pathToJs);
     const vendorNames = Object.keys(vendorsObj);
     vendorNames.forEach(vendorName => this.mergeVendor(vendorName, vendorsObj[vendorName]));
   }
 
-  mergeVendor(vendorName: string, newVendorObj: Vendor.Vendor): void {
+  private mergeVendor(vendorName: string, newVendorObj: Vendor.Vendor): void {
     if (!newVendorObj || typeof newVendorObj !== 'object') {
       return;
     }
@@ -219,10 +231,11 @@ export class VendorManager {
     });
   }
 
-  prepareVendor(vendorName: string, vendorObj: Vendor.Vendor): Vendor.Vendor {
+  private prepareVendor(vendorName: string, vendorObj: Vendor.Vendor): Vendor.Vendor {
     const preparedVendor: Vendor.Vendor = {
       baseResult: {},
       hostnameRules: [],
+      urlRules: [],
       ipRangeRules: [],
       headerRules: [],
       dnsRules: [],
@@ -238,6 +251,119 @@ export class VendorManager {
 
     return preparedVendor;
   }
+
+  async applyOuterRules(targetUrls: string[], resolver: Resolver): Promise<Vendor.DetectionResult[]> {
+    let results: Vendor.DetectionResult[] = [];
+
+    const resultPromises = targetUrls.map(target => this.applyOuterRulesUrl(target, resolver));
+    const resultsArraysOfArrays = await Promise.all(resultPromises);
+    resultsArraysOfArrays.forEach(part => results = results.concat(...part));
+
+    return results;
+  }
+
+  async applyOuterRulesUrl(targetUrl: string, resolver: Resolver): Promise<Vendor.DetectionResult[]> {
+    let results: Vendor.DetectionResult[] = [];
+    const hostname = url.parse(targetUrl).hostname.toLowerCase();
+
+    const addResult = (rule: Vendor.VendorRuleObject) => {
+      results.push({
+        hostname,
+        url: targetUrl,
+        ...rule.result,
+        rule
+      });
+    };
+
+    const addResultDns = (rule: Vendor.VendorRuleObject) => {
+      results.push({
+        hostname,
+        ...rule.result,
+        rule
+      });
+    };
+
+    this.hostnameRules.forEach(rule => {
+      if (matchPattern(hostname, rule.pattern)) {
+        addResultDns(rule);
+      }
+    });
+
+    this.urlRules.forEach(rule => {
+      if (matchPattern(targetUrl, rule.pattern)) {
+        addResult(rule);
+      }
+    });
+
+    let dnsResults = await resolver.resolveDns(hostname);
+    dnsResults.forEach(dnsResult => {
+      if (dnsResult.dnsRecordType === 'A') {
+        this.ipRangeRules.forEach(rule => {
+          const netmask: Netmask = rule.netmask;
+          if (netmask.contains(dnsResult.dnsRecordValue)) {
+            addResultDns(rule);
+          }
+        });
+      }
+      else {
+        this.dnsRules.forEach(rule => {
+          if (rule.recordType === dnsResult.dnsRecordType &&
+              matchPattern(dnsResult.dnsRecordValue, rule.pattern)) {
+            addResultDns(rule);
+          }
+        });
+      }
+    });
+
+    // Headers
+    let headerResults = await resolver.resolveHeaders(targetUrl);
+
+    headerResults.forEach(headerResult => {
+      this.headerRules.forEach(rule => {
+        if (rule.headerName.toLowerCase() === headerResult.headerName.toLowerCase() &&
+            matchPattern(headerResult.headerValue, rule.pattern)) {
+          addResult(rule);
+        }
+      });
+    });
+
+    return results;
+  }
+
+  async applyInnerRules(targetUrls: string[], resolver: Resolver): Promise<Vendor.DetectionResult[]> {
+    let results: Vendor.DetectionResult[] = [];
+
+    const resultPromises = targetUrls.map(target => this.applyInnerRulesUrl(target, resolver));
+    const resultsArraysOfArrays = await Promise.all(resultPromises);
+    resultsArraysOfArrays.forEach(part => results = results.concat(...part));
+
+    return results;
+  }
+
+  async applyInnerRulesUrl(targetUrl: string, resolver: Resolver): Promise<Vendor.DetectionResult[]> {
+    let results: Vendor.DetectionResult[] = [];
+
+    return results;
+  }
+}
+
+function matchPattern(value: string, pattern: string | RegExp): boolean {
+  if (typeof pattern === 'string') {
+    return !!value.match(pattern);
+  }
+  else if (pattern instanceof RegExp) {
+    return !!pattern.exec(value);
+  }
+}
+
+interface ResolutionResult {
+  hostname?: string;
+  url?: string;
+  ip4address?: string;
+  dnsRecordType?: string;
+  dnsRecordValue?: string;
+  headerName?: string;
+  headerValue?: string;
 }
 
 type Canonizer = (rule: any) => Vendor.VendorRuleObject;
@@ -252,6 +378,10 @@ function canonizeSingularRule(rule: any) {
 
 export const VendorRuleCanonizers = {
   hostnameRules(rule: any): Vendor.VendorRuleObject {
+    return canonizeSingularRule(rule);
+  },
+
+  urlRules(rule: any): Vendor.VendorRuleObject {
     return canonizeSingularRule(rule);
   },
 
@@ -284,8 +414,8 @@ export const VendorRuleCanonizers = {
     const possibleProps = ['a', 'cname', 'mx', 'srv', 'soa'];
     const found = possibleProps.some(prop => {
       if (rule[prop]) {
-        recordType = prop;
-        pattern = new RegExp(recordType[prop]);
+        recordType = prop.toUpperCase();
+        pattern = new RegExp(rule[prop]);
         return true;
       }
 
@@ -293,7 +423,7 @@ export const VendorRuleCanonizers = {
     });
 
     if (found) {
-      return { recordType, pattern };
+      return { recordType: recordType, pattern };
     }
 
     return rule;

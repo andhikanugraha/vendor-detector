@@ -7,8 +7,8 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch TypeScript",
-            "program": "${workspaceRoot}/dist/server.js",
+            "name": "Test",
+            "program": "${workspaceRoot}/dist/test.js",
             "sourceMaps": true,
             "outFiles": ["${workspaceRoot}/dist/**/*.js"]
         },

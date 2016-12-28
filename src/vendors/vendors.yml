@@ -1,0 +1,4 @@
+---
+Fastly:
+  hostnameRules:
+    - \.fastly\.net$

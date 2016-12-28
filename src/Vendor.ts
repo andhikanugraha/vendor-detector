@@ -23,6 +23,7 @@
 export interface Vendor {
   baseResult?: DetectionResult;
   hostnameRules?: HostnameRule[];
+  urlRules?: UrlRule[];
   ipRangeRules?: IpRangeRule[];
   headerRules?: HeaderRule[];
   dnsRules?: DnsRule[];
@@ -84,6 +85,10 @@ export interface MetaRuleObject extends VendorRuleObject {
 export type HostnameRule = VendorRulePattern | HostnameRuleObject;
 export type HostnameRuleObject = VendorRuleObject;
 
+// Url rules
+export type UrlRule = VendorRulePattern | UrlRuleObject;
+export type UrlRuleObject = VendorRuleObject;
+
 // Header rules
 export type HeaderRule = HeaderRuleShortHand | HeaderRuleObject;
 export type HeaderRuleShortHand = any; // i.e. { Server: nginx }
@@ -92,12 +97,9 @@ export interface HeaderRuleObject extends VendorRuleObject {
 }
 
 // DNS rules
-export type DnsRule = DnsRuleObject | DnsARuleObject | DnsCnameRuleObject | DnsMxRuleObject | DnsSrvRuleObject | DnsSoaRuleObject;
+export type DnsRule = DnsRuleObject | DnsCnameRuleObject | DnsMxRuleObject | DnsSrvRuleObject | DnsSoaRuleObject;
 export interface DnsRuleObject extends VendorRuleObject {
   recordType: string;
-}
-export interface DnsARuleObject extends VendorRuleObject {
-  a: VendorRulePattern;
 }
 export interface DnsCnameRuleObject extends VendorRuleObject {
   cname: VendorRulePattern;

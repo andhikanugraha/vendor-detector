@@ -4,7 +4,9 @@ import * as url from 'url';
 import * as cheerio from 'cheerio';
 
 import { FetchPool, FetchPoolOptions, FetchResponse } from './FetchPool';
-import { VendorManager, VendorReference } from './VendorManager';
+import { VendorManager } from './VendorManager';
+import { DetectionResult } from './Vendor';
+import { Resolver } from './Resolver';
 import * as pify from 'pify';
 
 const dnsAsync = pify(dns);
@@ -21,6 +23,7 @@ export class Search {
 
   fetchPool: FetchPool;
   vendorManager: VendorManager;
+  resolver = new Resolver;
 
   hostnames = new Set<string>();
   urls = new Set<string>();
@@ -44,7 +47,7 @@ export class Search {
       defaultUserAgent: options.defaultUserAgent,
       concurrency: options.concurrency
     });
-    this.vendorManager = new VendorManager(this, options.vendors);
+    this.vendorManager = VendorManager.getInstance();
   }
 
   // Populate this with the identified vendors and return this
@@ -89,22 +92,13 @@ export class Search {
   async analyzeUrls() {
     await this.vendorManager.init();
 
-    await this.resolveHostnames();
-    return this.vendorManager.detect(this);
-  }
+    const sampleUrls: string[] = [];
+    this.urlsByHostname.forEach(setOfUrls => {
+      sampleUrls.push(setOfUrls.values().next().value);
+    });
 
-  async resolveHostnames() {
-    for (let hostname of this.hostnames) {
-      const ipv4addr: string[] = await dnsAsync.resolve4(hostname).catch(e => {});
-      if (ipv4addr) {
-        ipv4addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
-      }
-
-      const ipv6addr: string[] = await dnsAsync.resolve4(hostname).catch(e => {});
-      if (ipv6addr) {
-        ipv6addr.forEach(addr => this.resolvedHostnames.push([hostname, addr]));
-      }
-    }
+    return this.vendorManager.applyOuterRules(sampleUrls, new Resolver);
+    // return this.vendorManager.detect(this);
   }
 
   getHostname(urlString: string) {
@@ -165,7 +159,7 @@ export class Search {
   }
 
   fetch(url: string, options = { headers: {} }): Promise<FetchResponse> {
-    return this.fetchPool.fetch(url, options).catch(e => { throw e });
+    return this.fetchPool.fetch(url, options).catch(e => { throw e; });
   }
 }
 

@@ -18,7 +18,7 @@ export class FetchPool {
 
   defaultUserAgent: string;
 
-  constructor(options: FetchPoolOptions) {
+  constructor(options: FetchPoolOptions = {}) {
     if (options.defaultUserAgent) {
       this.defaultUserAgent = options.defaultUserAgent;
     }
