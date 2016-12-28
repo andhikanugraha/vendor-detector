@@ -24,6 +24,9 @@ Microsoft IIS:
 Microsoft Office 365:
   dnsRules:
     - mx: outlook\.com$
+Microsoft Azure DNS:
+  dnsRules:
+    - ns: azure-dns
 Google G Suite:
   dnsRules:
     - mx: aspmx.l.google.com$
