@@ -1,20 +1,5 @@
 "use strict";
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
-    });
-};
+const tslib_1 = require("tslib");
 const dns = require("dns");
 const pify = require("pify");
 const netmask_1 = require("netmask");
@@ -30,7 +15,7 @@ class DetectionResultSet extends Array {
         this.baseResult = baseResult;
     }
     push(result) {
-        return super.push(__assign({}, this.baseResult, result));
+        return super.push(tslib_1.__assign({}, this.baseResult, result));
     }
 }
 exports.DetectionResultSet = DetectionResultSet;
@@ -46,12 +31,12 @@ class BaseVendor {
         this.search = search;
     }
     init() {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const ctor = this.constructor; // the class inheriting this class
             if (!ctor.init) {
                 return;
             }
-            yield ctor.init((url, options) => __awaiter(this, void 0, void 0, function* () { return this.fetch(url, options); }));
+            yield ctor.init((url, options) => tslib_1.__awaiter(this, void 0, void 0, function* () { return this.fetch(url, options); }));
             if (ctor.ipRanges) {
                 this.ipRanges = ctor.ipRanges.map(range => {
                     if (range.ipRange) {
@@ -63,8 +48,8 @@ class BaseVendor {
         });
     }
     detect() {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.results.setBaseResult(__assign({ vendor: this.constructor.name, productCategories: this.productCategories }, this.baseResult));
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
+            this.results.setBaseResult(tslib_1.__assign({ vendor: this.constructor.name, productCategories: this.productCategories }, this.baseResult));
             this.expandHeaderDetectionRuleShorthand();
             this.populateSampleUrls();
             this.applyHostnameDetectionRules();
@@ -112,7 +97,7 @@ class BaseVendor {
         });
     }
     detectByIpv4Addresses() {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const ctor = this.constructor;
             if (ctor.ipRanges) {
                 this.ipRanges = ctor.ipRanges;
@@ -161,7 +146,7 @@ class BaseVendor {
             hostnameRules.forEach(rule => {
                 if (this.matchHostname(hostname, rule.match)) {
                     console.dir(rule);
-                    this.addResult(__assign({ hostname, certainty: 1 /* Definite */ }, rule.result));
+                    this.addResult(tslib_1.__assign({ hostname, certainty: 1 /* Definite */ }, rule.result));
                 }
             });
         });
@@ -185,7 +170,7 @@ class BaseVendor {
         });
     }
     applyHeaderDetectionRules() {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const fetchPromises = [];
             this.sampleUrls.forEach((sampleUrl, hostname) => {
                 fetchPromises.push(this.applyHeaderDetectionRulesForUrl(hostname, sampleUrl));
@@ -194,7 +179,7 @@ class BaseVendor {
         });
     }
     applyHeaderDetectionRulesForUrl(sampleUrl, hostname) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const response = yield this.fetchHead(sampleUrl);
             if (!response || !response.headers) {
                 // Request failed, no matter
@@ -220,7 +205,7 @@ class BaseVendor {
         return this.search.fetch(url, options);
     }
     fetchHead(url, options) {
-        return this.fetch(url, __assign({}, options, { method: 'HEAD' })).catch(e => { });
+        return this.fetch(url, tslib_1.__assign({}, options, { method: 'HEAD' })).catch(e => { });
     }
     matchHeader(headersObject, header, needle) {
         header = header.toLowerCase();

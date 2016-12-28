@@ -1,20 +1,5 @@
 "use strict";
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
-    });
-};
+const tslib_1 = require("tslib");
 const fs = require("graceful-fs");
 const url = require("url");
 const globby = require("globby");
@@ -32,7 +17,7 @@ class VendorManager {
         return VendorManager.instance;
     }
     init() {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             yield this.loadVendorObjects();
             for (let item of this.vendors) {
                 const [vendorName, vendorObj] = item;
@@ -67,8 +52,8 @@ class VendorManager {
             this.vendors.forEach(vendorObj => {
                 const baseResult = vendorObj.baseResult;
                 vendorObj[prop].forEach(rule => {
-                    const canonizedRule = __assign({}, canonizer(rule));
-                    canonizedRule.result = __assign({}, baseResult, canonizedRule.result);
+                    const canonizedRule = tslib_1.__assign({}, canonizer(rule));
+                    canonizedRule.result = tslib_1.__assign({}, baseResult, canonizedRule.result);
                     canonizedRule.ruleType = ruleType;
                     if (typeof canonizedRule.pattern === 'string') {
                         canonizedRule.pattern = new RegExp(canonizedRule.pattern);
@@ -98,7 +83,7 @@ class VendorManager {
         });
     }
     loadVendorObjects() {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             yield this.loadWappalyzer();
             const jsFiles = yield globby(__dirname + '/vendors/**/*.js'); // use *.js after compilation
             jsFiles.forEach(file => this.loadJs(file));
@@ -107,7 +92,7 @@ class VendorManager {
         });
     }
     loadWappalyzer() {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             // Load apps.json from GitHub instead of loading npm
             const WappalyzerAppsJsonUri = 'https://raw.githubusercontent.com/AliasIO/Wappalyzer/master/src/apps.json';
             const response = yield node_fetch_1.default(WappalyzerAppsJsonUri);
@@ -196,14 +181,14 @@ class VendorManager {
         });
     }
     prepareVendor(vendorName, vendorObj) {
-        const preparedVendor = __assign({ baseResult: {}, hostnameRules: [], urlRules: [], ipRangeRules: [], headerRules: [], dnsRules: [], metaRules: [], htmlRules: [], scriptRules: [] }, vendorObj);
+        const preparedVendor = tslib_1.__assign({ baseResult: {}, hostnameRules: [], urlRules: [], ipRangeRules: [], headerRules: [], dnsRules: [], metaRules: [], htmlRules: [], scriptRules: [] }, vendorObj);
         if (!preparedVendor.baseResult.vendor) {
             preparedVendor.baseResult.vendor = vendorName;
         }
         return preparedVendor;
     }
     applyOuterRules(targetUrls, resolver) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             let results = [];
             const resultPromises = targetUrls.map(target => this.applyOuterRulesUrl(target, resolver));
             const resultsArraysOfArrays = yield Promise.all(resultPromises);
@@ -212,14 +197,14 @@ class VendorManager {
         });
     }
     applyOuterRulesUrl(targetUrl, resolver) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             let results = [];
             const hostname = url.parse(targetUrl).hostname.toLowerCase();
             const addResult = (rule) => {
-                results.push(__assign({ hostname, url: targetUrl }, rule.result, { rule }));
+                results.push(tslib_1.__assign({ hostname, url: targetUrl }, rule.result, { rule }));
             };
             const addResultDns = (rule) => {
-                results.push(__assign({ hostname }, rule.result, { rule }));
+                results.push(tslib_1.__assign({ hostname }, rule.result, { rule }));
             };
             this.hostnameRules.forEach(rule => {
                 if (matchPattern(hostname, rule.pattern)) {
@@ -264,7 +249,7 @@ class VendorManager {
         });
     }
     applyInnerRules(targetUrls, resolver) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             let results = [];
             const resultPromises = targetUrls.map(target => this.applyInnerRulesUrl(target, resolver));
             const resultsArraysOfArrays = yield Promise.all(resultPromises);
@@ -273,7 +258,7 @@ class VendorManager {
         });
     }
     applyInnerRulesUrl(targetUrl, resolver) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             let results = [];
             return results;
         });
@@ -302,7 +287,7 @@ exports.VendorRuleCanonizers = {
         return canonizeSingularRule(rule);
     },
     ipRangeRules(rule) {
-        return __assign({}, rule, { netmask: new netmask_1.Netmask(rule.ipRange) });
+        return tslib_1.__assign({}, rule, { netmask: new netmask_1.Netmask(rule.ipRange) });
     },
     headerRules(rule) {
         const keys = Object.keys(rule);

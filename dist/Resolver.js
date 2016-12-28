@@ -1,12 +1,5 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
-    });
-};
+const tslib_1 = require("tslib");
 const dns = require("dns");
 const pify = require("pify");
 const node_fetch_1 = require("node-fetch");
@@ -19,7 +12,7 @@ class Resolver {
         // this.fetchPool = new FetchPool();
     }
     resolveIp4(hostname) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const addresses = yield dnsAsync.resolve4(hostname);
             return addresses.map(addr => {
                 const result = {
@@ -31,7 +24,7 @@ class Resolver {
         });
     }
     resolveDns(hostname) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const results = [];
             const recordTypes = ['A', 'AAAA', 'MX', 'TXT', 'SRV', 'PTR', 'NS', 'CNAME', 'SOA', 'NAPTR'];
             const keys = {
@@ -68,7 +61,7 @@ class Resolver {
         });
     }
     resolveHeaders(targetUrl) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const results = [];
             const response = yield node_fetch_1.default(targetUrl, { method: 'HEAD' });
             const headers = response.headers;
