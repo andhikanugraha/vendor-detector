@@ -9,6 +9,9 @@ Akamai:
   hostnameRules:
     - \.edgesuite\.net$
     - \.akamai[a-z]+\.net$
+CloudFlare:
+  dnsRules:
+    - \.cloudflare\.com$
 Amazon CloudFront:
   headerRules:
     - Via: CloudFront
@@ -30,3 +33,6 @@ Microsoft Azure DNS:
 Google G Suite:
   dnsRules:
     - mx: aspmx.l.google.com$
+nginx:
+  headerRules:
+    - Server: nginx

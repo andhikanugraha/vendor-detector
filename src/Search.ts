@@ -22,7 +22,7 @@ export class Search {
   $: CheerioStatic;
 
   fetchPool: FetchPool;
-  vendorManager: VendorManager;
+  vendorManager = VendorManager.getInstance();
   resolver = new Resolver;
 
   hostnames = new Set<string>();
@@ -31,8 +31,7 @@ export class Search {
   urlsByTag = new Map<string, Set<string>>();
   hostnamesByTag = new Map<string, Set<string>>();
 
-  // Hostnames resolved to IPv4
-  resolvedHostnames: [string, string][] = [];
+  static inited = false;
 
   // How to use:
   // search = new Search('example.com');
@@ -47,7 +46,6 @@ export class Search {
       defaultUserAgent: options.defaultUserAgent,
       concurrency: options.concurrency
     });
-    this.vendorManager = VendorManager.getInstance();
   }
 
   // Populate this with the identified vendors and return this
@@ -90,7 +88,10 @@ export class Search {
   }
 
   async analyzeUrls() {
-    await this.vendorManager.init();
+    if (!Search.inited) {
+      await this.vendorManager.init();
+      Search.inited = false;
+    }
 
     const sampleUrls: string[] = [];
     this.urlsByHostname.forEach(setOfUrls => {

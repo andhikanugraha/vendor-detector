@@ -16,21 +16,19 @@ class Search {
             defaultUserAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2227.0 Safari/537.36',
             concurrency: 1
         }) {
+        this.vendorManager = VendorManager_1.VendorManager.getInstance();
         this.resolver = new Resolver_1.Resolver;
         this.hostnames = new Set();
         this.urls = new Set();
         this.urlsByHostname = new Map();
         this.urlsByTag = new Map();
         this.hostnamesByTag = new Map();
-        // Hostnames resolved to IPv4
-        this.resolvedHostnames = [];
         this.targetUrl = targetUrl;
         this.parsedTargetUrl = url.parse(targetUrl);
         this.fetchPool = new FetchPool_1.FetchPool({
             defaultUserAgent: options.defaultUserAgent,
             concurrency: options.concurrency
         });
-        this.vendorManager = VendorManager_1.VendorManager.getInstance();
     }
     // Populate this with the identified vendors and return this
     detectVendors() {
@@ -70,7 +68,10 @@ class Search {
     }
     analyzeUrls() {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
-            yield this.vendorManager.init();
+            if (!Search.inited) {
+                yield this.vendorManager.init();
+                Search.inited = false;
+            }
             const sampleUrls = [];
             this.urlsByHostname.forEach(setOfUrls => {
                 sampleUrls.push(setOfUrls.values().next().value);
@@ -129,6 +130,7 @@ class Search {
         return this.fetchPool.fetch(url, options).catch(e => { throw e; });
     }
 }
+Search.inited = false;
 exports.Search = Search;
 function detectVendors(targetUrl, options) {
     return tslib_1.__awaiter(this, void 0, void 0, function* () {
