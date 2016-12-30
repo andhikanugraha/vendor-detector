@@ -13,8 +13,8 @@ class Resolver {
         // this.fetchPool = new FetchPool();
     }
     fetch(url, options = {}) {
-        options = tslib_1.__assign({ timeout: 10000 }, options);
-        return node_fetch_1.default(url, options);
+        options = tslib_1.__assign({ timeout: 2000 }, options);
+        return node_fetch_1.default(url, options).catch(e => { console.error(e); });
         // return this.fetchPool.fetch(url, options);
     }
     resolveIp4(hostname) {
@@ -69,9 +69,7 @@ class Resolver {
     resolveHeaders(targetUrl) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const results = [];
-            const response = yield this.fetch(targetUrl, { method: 'HEAD' }).catch(e => {
-                console.error(e);
-            });
+            const response = yield this.fetch(targetUrl, { method: 'HEAD' });
             if (!response) {
                 return [];
             }
@@ -90,9 +88,7 @@ class Resolver {
     resolveHtml(targetUrl) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const results = [];
-            const response = yield this.fetch(targetUrl).catch(e => {
-                console.error(e);
-            });
+            const response = yield this.fetch(targetUrl);
             if (!response) {
                 return [];
             }

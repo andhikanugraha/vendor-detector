@@ -12,10 +12,10 @@ function eqHostname(a, b) {
     if (a === b) {
         return true;
     }
-    if (a === 'www.' + b) {
+    if (a.match(b)) {
         return true;
     }
-    if ('www.' + a === b) {
+    if (b.match(a)) {
         return true;
     }
     return false;
@@ -174,5 +174,5 @@ app.get('/', (req, res, next) => tslib_1.__awaiter(this, void 0, void 0, functio
         res.send(template({ q, e }));
     }
 }));
-VendorManager_1.VendorManager.getInstance().init();
+VendorManager_1.VendorManager.getInstance().init().then(() => Search_1.Search.inited = true);
 app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));

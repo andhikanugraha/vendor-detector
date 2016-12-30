@@ -18,11 +18,11 @@ export class Resolver {
 
   fetch(url: string, options: any = {}): Promise<any> {
     options = {
-      timeout: 10000,
+      timeout: 2000,
       ...options
     };
 
-    return fetch(url, options);
+    return fetch(url, options).catch(e => { console.error(e); });
     // return this.fetchPool.fetch(url, options);
   }
 
@@ -82,9 +82,7 @@ export class Resolver {
 
   async resolveHeaders(targetUrl: string): Promise<ResolverResult[]> {
     const results = [];
-    const response = await this.fetch(targetUrl, { method: 'HEAD' }).catch(e => {
-      console.error(e);
-    });
+    const response = await this.fetch(targetUrl, { method: 'HEAD' });
     if (!response) {
       return [];
     }
@@ -104,9 +102,7 @@ export class Resolver {
 
   async resolveHtml(targetUrl: string): Promise<ResolverResult[]> {
     const results = [];
-    const response = await this.fetch(targetUrl).catch(e => {
-      console.error(e);
-    });
+    const response = await this.fetch(targetUrl);
     if (!response) {
       return [];
     }

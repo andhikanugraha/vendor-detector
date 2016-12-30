@@ -1,7 +1,7 @@
 import * as url from 'url';
 import * as express from 'express';
 
-import { detectVendors } from './Search';
+import { detectVendors, Search } from './Search';
 import { VendorManager } from './VendorManager';
 import { long2ip } from 'netmask';
 
@@ -14,10 +14,10 @@ function eqHostname(a, b) {
   if (a === b) {
     return true;
   }
-  if (a === 'www.' + b) {
+  if (a.match(b)) {
     return true;
   }
-  if ('www.' + a === b) {
+  if (b.match(a)) {
     return true;
   }
 
@@ -191,6 +191,6 @@ app.get('/', async(req, res, next) => {
   }
 });
 
-VendorManager.getInstance().init();
+VendorManager.getInstance().init().then(() => Search.inited = true);
 app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));
 

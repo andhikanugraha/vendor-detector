@@ -41,7 +41,7 @@ class Search {
     scrapeUrls() {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             this.addUrl(this.targetUrl);
-            const response = yield this.fetch(this.targetUrl, { timeout: 10000 }).catch(e => { });
+            const response = yield this.fetch(this.targetUrl, { timeout: 3000 }).catch(e => { });
             if (!response) {
                 return;
             }
