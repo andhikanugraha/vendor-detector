@@ -7,7 +7,7 @@ import { Resolver, ResolverResult } from './Resolver';
 
 import * as globby from 'globby';
 import fetch from 'node-fetch';
-import { Netmask } from 'netmask';
+import { Netmask, ip2long } from 'netmask';
 
 
 import * as yaml from 'js-yaml';
@@ -70,7 +70,7 @@ export class VendorManager {
     ];
 
     const sortBy = {
-      ipRangeRules: x => x.netmask.netLong,
+      // ipRangeRules: x => x.first,
       headerRules: x => x.headerName,
       metaRules: x => x.name
     };
@@ -89,7 +89,9 @@ export class VendorManager {
             ...baseResult,
             ...canonizedRule.result
           };
-          canonizedRule.ruleType = ruleType;
+          if (!canonizedRule.ruleType) {
+            canonizedRule.ruleType = ruleType;
+          }
 
           if (typeof canonizedRule.pattern === 'string') {
             canonizedRule.pattern = new RegExp(canonizedRule.pattern);
@@ -299,8 +301,9 @@ export class VendorManager {
     dnsResults.forEach(dnsResult => {
       if (dnsResult.dnsRecordType === 'A') {
         this.ipRangeRules.forEach(rule => {
-          const netmask: Netmask = rule.netmask;
-          if (netmask.contains(dnsResult.dnsRecordValue)) {
+          const ipAsLong = ip2long(dnsResult.dnsRecordValue);
+          if (ipAsLong >= rule.first && ipAsLong <= rule.last) {
+            console.log(rule.result.vendor);
             addResultDns(rule);
           }
         });
@@ -412,10 +415,16 @@ export const VendorRuleCanonizers = {
   },
 
   ipRangeRules(rule: any): Vendor.IpRangeRule {
-    return {
-      ...rule,
-      netmask: new Netmask(rule.ipRange)
-    };
+    if (rule.ipRange) {
+      const netmask = new Netmask(rule.ipRange);
+      return {
+        first: ip2long(netmask.first),
+        last: ip2long(netmask.last),
+        ...rule
+      };
+    }
+
+    return rule;
   },
 
   headerRules(rule: any): Vendor.HeaderRuleObject {

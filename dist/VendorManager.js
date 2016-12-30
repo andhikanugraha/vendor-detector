@@ -41,7 +41,7 @@ class VendorManager {
             'script'
         ];
         const sortBy = {
-            ipRangeRules: x => x.netmask.netLong,
+            // ipRangeRules: x => x.first,
             headerRules: x => x.headerName,
             metaRules: x => x.name
         };
@@ -54,7 +54,9 @@ class VendorManager {
                 vendorObj[prop].forEach(rule => {
                     const canonizedRule = tslib_1.__assign({}, canonizer(rule));
                     canonizedRule.result = tslib_1.__assign({}, baseResult, canonizedRule.result);
-                    canonizedRule.ruleType = ruleType;
+                    if (!canonizedRule.ruleType) {
+                        canonizedRule.ruleType = ruleType;
+                    }
                     if (typeof canonizedRule.pattern === 'string') {
                         canonizedRule.pattern = new RegExp(canonizedRule.pattern);
                     }
@@ -220,8 +222,9 @@ class VendorManager {
             dnsResults.forEach(dnsResult => {
                 if (dnsResult.dnsRecordType === 'A') {
                     this.ipRangeRules.forEach(rule => {
-                        const netmask = rule.netmask;
-                        if (netmask.contains(dnsResult.dnsRecordValue)) {
+                        const ipAsLong = netmask_1.ip2long(dnsResult.dnsRecordValue);
+                        if (ipAsLong >= rule.first && ipAsLong <= rule.last) {
+                            console.log(rule.result.vendor);
                             addResultDns(rule);
                         }
                     });
@@ -317,7 +320,11 @@ exports.VendorRuleCanonizers = {
         return canonizeSingularRule(rule);
     },
     ipRangeRules(rule) {
-        return tslib_1.__assign({}, rule, { netmask: new netmask_1.Netmask(rule.ipRange) });
+        if (rule.ipRange) {
+            const netmask = new netmask_1.Netmask(rule.ipRange);
+            return tslib_1.__assign({ first: netmask_1.ip2long(netmask.first), last: netmask_1.ip2long(netmask.last) }, rule);
+        }
+        return rule;
     },
     headerRules(rule) {
         const keys = Object.keys(rule);

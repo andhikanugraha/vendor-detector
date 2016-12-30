@@ -45,6 +45,7 @@ export interface DetectionResult {
   url?: string;
   certainty?: string;
   vendor?: string;
+  asNumber?: string;
   region?: string;
   message?: string;
 
@@ -62,7 +63,9 @@ export type VendorRulePattern = string | RegExp;
 
 // IP range rules
 export interface IpRangeRule extends VendorRuleObject {
-  ipRange: string;
+  ipRange?: string;
+  first?: number;
+  last?: number;
   netmask?: any;
 };
 
