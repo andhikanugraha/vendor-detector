@@ -40,7 +40,11 @@ class Search {
     }
     scrapeUrls() {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
-            const response = yield this.fetch(this.targetUrl);
+            this.addUrl(this.targetUrl);
+            const response = yield this.fetch(this.targetUrl, { timeout: 10000 }).catch(e => { });
+            if (!response) {
+                return;
+            }
             const responseText = yield response.text();
             const $ = this.$ = cheerio.load(responseText);
             // Get base href
@@ -52,7 +56,6 @@ class Search {
             else {
                 baseUrl = this.targetUrl;
             }
-            this.addUrl(this.targetUrl);
             const tagsToScrape = [
                 ['link', 'href'],
                 ['img', 'src'],
@@ -68,17 +71,22 @@ class Search {
     }
     analyzeUrls() {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
-            if (!Search.inited) {
-                yield this.vendorManager.init();
-                Search.inited = false;
+            try {
+                if (!Search.inited) {
+                    yield this.vendorManager.init();
+                    Search.inited = true;
+                }
+                const sampleUrls = [];
+                this.urlsByHostname.forEach(setOfUrls => {
+                    sampleUrls.push(setOfUrls.values().next().value);
+                });
+                const outerResults = yield this.vendorManager.applyOuterRules(sampleUrls, this.resolver);
+                const innerResults = yield this.vendorManager.applyInnerRules([this.targetUrl], this.resolver);
+                return [...outerResults, ...innerResults];
             }
-            const sampleUrls = [];
-            this.urlsByHostname.forEach(setOfUrls => {
-                sampleUrls.push(setOfUrls.values().next().value);
-            });
-            const outerResults = yield this.vendorManager.applyOuterRules(sampleUrls, this.resolver);
-            const innerResults = yield this.vendorManager.applyInnerRules([this.targetUrl], this.resolver);
-            return [...outerResults, ...innerResults];
+            catch (e) {
+                return [];
+            }
         });
     }
     getHostname(urlString) {

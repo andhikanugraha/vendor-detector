@@ -57,7 +57,13 @@ export class Search {
   }
 
   async scrapeUrls() {
-    const response = await this.fetch(this.targetUrl);
+    this.addUrl(this.targetUrl);
+
+    const response = await this.fetch(this.targetUrl, {timeout: 10000}).catch(e => {});
+    if (!response) {
+      return;
+    }
+
     const responseText = await response.text();
     const $ = this.$ = cheerio.load(responseText);
 
@@ -71,8 +77,6 @@ export class Search {
     else {
       baseUrl = this.targetUrl;
     }
-
-    this.addUrl(this.targetUrl);
 
     const tagsToScrape = [
       ['link', 'href'],
@@ -88,21 +92,26 @@ export class Search {
   }
 
   async analyzeUrls() {
-    if (!Search.inited) {
-      await this.vendorManager.init();
-      Search.inited = false;
+    try {
+      if (!Search.inited) {
+        await this.vendorManager.init();
+        Search.inited = true;
+      }
+
+      const sampleUrls: string[] = [];
+      this.urlsByHostname.forEach(setOfUrls => {
+        sampleUrls.push(setOfUrls.values().next().value);
+      });
+
+      const outerResults = await this.vendorManager.applyOuterRules(sampleUrls, this.resolver);
+
+      const innerResults = await this.vendorManager.applyInnerRules([this.targetUrl], this.resolver);
+
+      return [...outerResults, ...innerResults];
     }
-
-    const sampleUrls: string[] = [];
-    this.urlsByHostname.forEach(setOfUrls => {
-      sampleUrls.push(setOfUrls.values().next().value);
-    });
-
-    const outerResults = await this.vendorManager.applyOuterRules(sampleUrls, this.resolver);
-
-    const innerResults = await this.vendorManager.applyInnerRules([this.targetUrl], this.resolver);
-
-    return [...outerResults, ...innerResults];
+    catch (e) {
+      return [];
+    }
   }
 
   getHostname(urlString: string) {
