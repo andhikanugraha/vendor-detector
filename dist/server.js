@@ -3,6 +3,7 @@ const tslib_1 = require("tslib");
 const url = require("url");
 const express = require("express");
 const Search_1 = require("./Search");
+const VendorManager_1 = require("./VendorManager");
 const netmask_1 = require("netmask");
 const app = express();
 app.use('/css', express.static(__dirname + '/../node_modules/bootstrap/dist/css'));
@@ -163,7 +164,9 @@ app.get('/', (req, res, next) => tslib_1.__awaiter(this, void 0, void 0, functio
         }
     }
     catch (e) {
-        next(e);
+        res.send(template({ q }));
     }
 }));
-app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));
+VendorManager_1.VendorManager.getInstance().init().then(() => {
+    app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));
+});

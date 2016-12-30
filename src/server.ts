@@ -2,6 +2,7 @@ import * as url from 'url';
 import * as express from 'express';
 
 import { detectVendors } from './Search';
+import { VendorManager } from './VendorManager';
 import { long2ip } from 'netmask';
 
 const app = express();
@@ -178,8 +179,12 @@ app.get('/', async(req, res, next) => {
     }
   }
   catch (e) {
-    next(e);
+    res.send(template({q}));
+    // next(e);
   }
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));
+VendorManager.getInstance().init().then(() => {
+  app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));
+});
+
