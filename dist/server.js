@@ -174,6 +174,5 @@ app.get('/', (req, res, next) => tslib_1.__awaiter(this, void 0, void 0, functio
         res.send(template({ q }));
     }
 }));
-VendorManager_1.VendorManager.getInstance().init().then(() => {
-    app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));
-});
+VendorManager_1.VendorManager.getInstance().init();
+app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));

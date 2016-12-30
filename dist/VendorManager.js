@@ -224,7 +224,6 @@ class VendorManager {
                     this.ipRangeRules.forEach(rule => {
                         const ipAsLong = netmask_1.ip2long(dnsResult.dnsRecordValue);
                         if (ipAsLong >= rule.first && ipAsLong <= rule.last) {
-                            console.log(rule.result.vendor);
                             addResultDns(rule);
                         }
                     });
