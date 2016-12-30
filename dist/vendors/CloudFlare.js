@@ -12,9 +12,10 @@ exports.CloudFlare = {
                 const response = yield node_fetch_1.default(ip4RangesEndpoint).catch(catcher);
                 const responseText = yield response.text();
                 const ipRanges = responseText.trim().split(/\s+/g);
-                return ipRanges.map(range => {
+                const ipRangeRules = ipRanges.map(range => {
                     return { ipRange: range };
                 });
+                return { ipRangeRules };
             }
             catch (e) {
                 console.error(e);

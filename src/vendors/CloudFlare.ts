@@ -14,9 +14,11 @@ export const CloudFlare: Vendor = {
       const responseText = await response.text();
       const ipRanges = responseText.trim().split(/\s+/g);
 
-      return ipRanges.map(range => {
+      const ipRangeRules = ipRanges.map(range => {
         return { ipRange: range };
       });
+
+      return { ipRangeRules };
     }
     catch (e) {
       console.error(e);
