@@ -73,7 +73,7 @@ function reason(rule) {
 function template(params) {
     let body = '';
     separateData(params);
-    if (params.data) {
+    if (params.selfRows.length > 0) {
         body = `
 <hr>
 <h4 style="padding-bottom: 0.3em">Results for <strong>${params.selfHostname}</strong></h4>
@@ -116,6 +116,12 @@ function template(params) {
 </table>
 `;
     }
+    else {
+        body = `
+<hr>
+<p>No results found for <strong>${params.selfHostname}</strong>.</p>
+`;
+    }
     return `
 <!doctype html>
 <title>Vendor detector (alpha)</title>
@@ -142,6 +148,7 @@ function template(params) {
 
   <footer>
     <p>An <a href="https://github.com/andhikanugraha/vendor-detector">open source project</a> by Andhika Nugraha</p>
+    <p>This product includes GeoLite data created by MaxMind, available from <a href="http://www.maxmind.com">http://www.maxmind.com</a>.</p>
   </footer>
 </div>
 `;
