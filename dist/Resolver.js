@@ -13,6 +13,7 @@ class Resolver {
         // this.fetchPool = new FetchPool();
     }
     fetch(url, options = {}) {
+        options = tslib_1.__assign({ timeout: 10000 }, options);
         return node_fetch_1.default(url, options);
         // return this.fetchPool.fetch(url, options);
     }

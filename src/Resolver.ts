@@ -17,6 +17,11 @@ export class Resolver {
   }
 
   fetch(url: string, options: any = {}): Promise<any> {
+    options = {
+      timeout: 10000,
+      ...options
+    };
+
     return fetch(url, options);
     // return this.fetchPool.fetch(url, options);
   }
