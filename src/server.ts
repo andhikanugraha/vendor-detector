@@ -2,6 +2,7 @@ import * as url from 'url';
 import * as express from 'express';
 
 import { detectVendors } from './Search';
+import { long2ip } from 'netmask';
 
 const app = express();
 
@@ -52,7 +53,15 @@ function separateData(params) {
 function reason(rule) {
   switch (rule.ruleType) {
     case 'ipRange':
-      return `IP range: <code>${rule.ipRange}</code>`;
+      if (rule.ipRange) {
+        return `IP range: <code>${rule.ipRange}</code>`;
+      }
+      else if (rule.result.asNumber) {
+        return `AS Number: <code>${rule.result.asNumber}</code>`;
+      }
+      else {
+        return `IP range: <code>${long2ip(rule.first)}-${long2ip(rule.last)}</code>`;
+      }
     case 'dns':
       return `DNS <code>${rule.recordType.toUpperCase()}</code> rule`;
     case 'script':
@@ -82,6 +91,7 @@ function template(params) {
 <table class="table">
   <thead>
     <tr>
+      <th>Hostname</th>
       <th>Vendor</th>
       <th>Detected through</th>
     </tr>
@@ -89,6 +99,7 @@ function template(params) {
   <tbody>
     ${params.selfRows.map(row => `
       <tr>
+        <td><strong>${row.hostname || ''}</strong></td>
         <td>${(row.vendor || '')}${(row.region && ` <code>${row.region}</code>` || '')}</td>
         <td>${reason(row.rule)}</td>
       </tr>`).join('')}

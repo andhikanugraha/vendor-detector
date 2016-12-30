@@ -3,6 +3,7 @@ const tslib_1 = require("tslib");
 const url = require("url");
 const express = require("express");
 const Search_1 = require("./Search");
+const netmask_1 = require("netmask");
 const app = express();
 app.use('/css', express.static(__dirname + '/../node_modules/bootstrap/dist/css'));
 app.use('/js', express.static(__dirname + '/../node_modules/bootstrap/dist/js'));
@@ -42,7 +43,15 @@ function separateData(params) {
 function reason(rule) {
     switch (rule.ruleType) {
         case 'ipRange':
-            return `IP range: <code>${rule.ipRange}</code>`;
+            if (rule.ipRange) {
+                return `IP range: <code>${rule.ipRange}</code>`;
+            }
+            else if (rule.result.asNumber) {
+                return `AS Number: <code>${rule.result.asNumber}</code>`;
+            }
+            else {
+                return `IP range: <code>${netmask_1.long2ip(rule.first)}-${netmask_1.long2ip(rule.last)}</code>`;
+            }
         case 'dns':
             return `DNS <code>${rule.recordType.toUpperCase()}</code> rule`;
         case 'script':
@@ -70,6 +79,7 @@ function template(params) {
 <table class="table">
   <thead>
     <tr>
+      <th>Hostname</th>
       <th>Vendor</th>
       <th>Detected through</th>
     </tr>
@@ -77,6 +87,7 @@ function template(params) {
   <tbody>
     ${params.selfRows.map(row => `
       <tr>
+        <td><strong>${row.hostname || ''}</strong></td>
         <td>${(row.vendor || '')}${(row.region && ` <code>${row.region}</code>` || '')}</td>
         <td>${reason(row.rule)}</td>
       </tr>`).join('')}
