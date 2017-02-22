@@ -108,21 +108,40 @@ class VendorManager {
     }
     loadWappalyzerApp(vendorName, appObj) {
         const newVendor = {};
-        if (appObj.implies) {
-            newVendor.implies = appObj.implies;
-        }
-        if (appObj.excludes) {
-            newVendor.excludes = appObj.excludes;
-        }
-        if (appObj.url) {
-            newVendor.urlRules = [appObj.url];
-        }
-        if (appObj.html) {
-            newVendor.htmlRules = [appObj.html];
-        }
-        if (appObj.script) {
-            newVendor.scriptRules = [appObj.script];
-        }
+        const parseWappalyzerPattern = (pattern) => {
+            // Parse Wappalyzer patterns
+            // For now, implement only the product detection, ignore metadata
+            // TODO: implement confidence level & version detection
+            const splitPattern = pattern.split('\\;');
+            try {
+                return new RegExp(splitPattern[0]);
+            }
+            catch (e) { }
+            return splitPattern[0];
+        };
+        ['implies', 'excludes'].forEach(prop => {
+            if (!appObj[prop]) {
+                return;
+            }
+            if (appObj[prop] instanceof Array) {
+                newVendor[prop] = [...appObj[prop]];
+            }
+            else {
+                newVendor[prop] = [appObj[prop]];
+            }
+        });
+        ['url', 'html', 'script'].forEach(prop => {
+            if (!appObj[prop]) {
+                return;
+            }
+            const newProp = prop + 'Rules';
+            if (appObj[prop] instanceof Array) {
+                newVendor[newProp] = [...appObj[prop].map(parseWappalyzerPattern)];
+            }
+            else {
+                newVendor[newProp] = [parseWappalyzerPattern(appObj[prop])];
+            }
+        });
         // headers
         let headers = appObj.headers;
         if (headers) {
@@ -130,7 +149,7 @@ class VendorManager {
             Object.keys(headers).forEach(header => {
                 const rule = {
                     headerName: header,
-                    pattern: headers[header]
+                    pattern: parseWappalyzerPattern(headers[header])
                 };
                 newVendor.headerRules.push(rule);
             });
@@ -142,8 +161,9 @@ class VendorManager {
             Object.keys(meta).forEach(metaName => {
                 const rule = {
                     name: metaName,
-                    pattern: meta[meta]
+                    pattern: parseWappalyzerPattern(meta[metaName])
                 };
+                newVendor.metaRules.push(rule);
             });
         }
         return newVendor;
