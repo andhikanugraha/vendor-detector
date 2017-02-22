@@ -171,7 +171,7 @@ export class Search {
     this.hostnamesByTag.get(tag).add(hostname);
   }
 
-  fetch(url: string, options = { headers: {} }): Promise<FetchResponse> {
+  fetch(url: string, options: any = { headers: {} }): Promise<FetchResponse> {
     return this.fetchPool.fetch(url, options).catch(e => { throw e; });
   }
 }
