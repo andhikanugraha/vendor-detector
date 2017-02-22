@@ -23,6 +23,8 @@ export class VendorManager {
   }
 
   vendors = new Map<string, Vendor.Vendor>();
+  vendorImplications = new Map<string, string[]>();
+  vendorExclusions = new Map<string, string[]>();
 
   // Canonized rules
 
@@ -55,6 +57,7 @@ export class VendorManager {
     }
 
     this.loadRules();
+    this.loadImplicationsAndExclusions();
   }
 
   private loadRules(): void {
@@ -278,6 +281,84 @@ export class VendorManager {
     return preparedVendor;
   }
 
+  private resolveVendorsRecursive(vendorName: string, property: string, alreadyTraversed: any): string[] {
+    alreadyTraversed[vendorName] = true;
+
+    if (!this.vendors.get(vendorName)) {
+      // If you're using ASN or others, the vendor isn't indexed
+      return [];
+    }
+
+    let resolvedVendors = this.vendors.get(vendorName)[property];
+    if (resolvedVendors) {
+      resolvedVendors.forEach(resolvedVendor => {
+        if (alreadyTraversed[resolvedVendor]) {
+          return;
+        }
+
+        resolvedVendors = resolvedVendors.concat(this.resolveVendorsRecursive(resolvedVendor, property, alreadyTraversed));
+        alreadyTraversed[resolvedVendor] = true;
+      });
+
+      return resolvedVendors;
+    }
+
+    return [];
+  }
+
+  private loadImplicationsAndExclusions(): void {
+    for (let vendorName of this.vendors.keys()) {
+      this.vendorImplications.set(vendorName, this.resolveVendorsRecursive(vendorName, 'implies', {}));
+      this.vendorExclusions.set(vendorName, this.resolveVendorsRecursive(vendorName, 'excludes', {}));
+    }
+  }
+
+  private applyImplicationsAndExclusions(results: Vendor.DetectionResult[]): Vendor.DetectionResult[] {
+    // results should be scoped to a single URL or hostname
+    // To be filled with vendor names listed in the results
+    const vendorNames = new Set<string>();
+
+    // Apply implications
+    const impliedResults: Vendor.DetectionResult[] = [];
+
+    results.forEach(result => {
+      vendorNames.add(result.vendor);
+      const vendorObj = this.vendors.get(result.vendor);
+      const impliedVendors = this.vendorImplications.get(result.vendor);
+
+      if (!impliedVendors) {
+        return;
+      }
+
+      impliedVendors.forEach(impliedVendor => {
+        vendorNames.add(impliedVendor);
+
+        // Add results for each implied vendor
+        impliedResults.push({
+          ...result,
+          vendor: impliedVendor
+        });
+      });
+    });
+
+    impliedResults.forEach(result => results.push(result));
+
+    // Apply exclusions
+    const vendorsToRemove = new Set<string>();
+    vendorNames.forEach(vendorName => {
+      const exclusions = this.vendorExclusions.get(vendorName);
+      if (!exclusions) {
+        return;
+      }
+
+      exclusions.forEach(v => vendorsToRemove.add(v));
+    });
+
+    results = results.filter(result => !vendorsToRemove.has(result.vendor));
+
+    return results;
+  }
+
   async applyOuterRules(targetUrls: string[], resolver: Resolver): Promise<Vendor.DetectionResult[]> {
     let results: Vendor.DetectionResult[] = [];
 
@@ -353,6 +434,8 @@ export class VendorManager {
       });
     });
 
+    results = this.applyImplicationsAndExclusions(results);
+
     return results;
   }
 
@@ -406,6 +489,8 @@ export class VendorManager {
         });
       }
     });
+
+    results = this.applyImplicationsAndExclusions(results);
 
     return results;
   }

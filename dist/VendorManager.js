@@ -9,6 +9,8 @@ const yaml = require("js-yaml");
 class VendorManager {
     constructor() {
         this.vendors = new Map();
+        this.vendorImplications = new Map();
+        this.vendorExclusions = new Map();
     }
     static getInstance() {
         if (!VendorManager.instance) {
@@ -27,6 +29,7 @@ class VendorManager {
                 }
             }
             this.loadRules();
+            this.loadImplicationsAndExclusions();
         });
     }
     loadRules() {
@@ -209,6 +212,63 @@ class VendorManager {
         }
         return preparedVendor;
     }
+    resolveVendorsRecursive(vendorName, property, alreadyTraversed) {
+        alreadyTraversed[vendorName] = true;
+        if (!this.vendors.get(vendorName)) {
+            // If you're using ASN or others, the vendor isn't indexed
+            return [];
+        }
+        let resolvedVendors = this.vendors.get(vendorName)[property];
+        if (resolvedVendors) {
+            resolvedVendors.forEach(resolvedVendor => {
+                if (alreadyTraversed[resolvedVendor]) {
+                    return;
+                }
+                resolvedVendors = resolvedVendors.concat(this.resolveVendorsRecursive(resolvedVendor, property, alreadyTraversed));
+                alreadyTraversed[resolvedVendor] = true;
+            });
+            return resolvedVendors;
+        }
+        return [];
+    }
+    loadImplicationsAndExclusions() {
+        for (let vendorName of this.vendors.keys()) {
+            this.vendorImplications.set(vendorName, this.resolveVendorsRecursive(vendorName, 'implies', {}));
+            this.vendorExclusions.set(vendorName, this.resolveVendorsRecursive(vendorName, 'excludes', {}));
+        }
+    }
+    applyImplicationsAndExclusions(results) {
+        // results should be scoped to a single URL or hostname
+        // To be filled with vendor names listed in the results
+        const vendorNames = new Set();
+        // Apply implications
+        const impliedResults = [];
+        results.forEach(result => {
+            vendorNames.add(result.vendor);
+            const vendorObj = this.vendors.get(result.vendor);
+            const impliedVendors = this.vendorImplications.get(result.vendor);
+            if (!impliedVendors) {
+                return;
+            }
+            impliedVendors.forEach(impliedVendor => {
+                vendorNames.add(impliedVendor);
+                // Add results for each implied vendor
+                impliedResults.push(tslib_1.__assign({}, result, { vendor: impliedVendor }));
+            });
+        });
+        impliedResults.forEach(result => results.push(result));
+        // Apply exclusions
+        const vendorsToRemove = new Set();
+        vendorNames.forEach(vendorName => {
+            const exclusions = this.vendorExclusions.get(vendorName);
+            if (!exclusions) {
+                return;
+            }
+            exclusions.forEach(v => vendorsToRemove.add(v));
+        });
+        results = results.filter(result => !vendorsToRemove.has(result.vendor));
+        return results;
+    }
     applyOuterRules(targetUrls, resolver) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             let results = [];
@@ -267,6 +327,7 @@ class VendorManager {
                     }
                 });
             });
+            results = this.applyImplicationsAndExclusions(results);
             return results;
         });
     }
@@ -312,6 +373,7 @@ class VendorManager {
                     });
                 }
             });
+            results = this.applyImplicationsAndExclusions(results);
             return results;
         });
     }
