@@ -19,7 +19,12 @@ exports.Azure = {
         { pattern: /.msecnd.net$/,
             result: { vendor: 'Azure CDN' } },
         { pattern: /.cloudapp.net$/,
-            result: { vendor: 'Azure Virtual Machines (Classic) or Web/Worker Roles' } }
+            result: { vendor: 'Azure Classic Virtual Machines or Web/Worker Roles' } }
+    ],
+    dnsRules: [
+        { recordType: 'ns',
+            pattern: /azure-dns/,
+            result: { vendor: 'Azure DNS' } }
     ],
     load() {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {

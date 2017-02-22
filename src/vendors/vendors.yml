@@ -21,15 +21,9 @@ Amazon S3:
 Amazon Route 53:
   dnsRules:
     - ns: awsdns
-Microsoft Office 365:
+Office 365 Exchange Online:
   dnsRules:
     - mx: outlook\.com$
-Microsoft Azure DNS:
-  dnsRules:
-    - ns: azure-dns
 Google G Suite:
   dnsRules:
     - mx: aspmx.l.google.com$
-nginx:
-  headerRules:
-    - Server: nginx
