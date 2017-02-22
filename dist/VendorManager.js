@@ -55,8 +55,8 @@ class VendorManager {
             this.vendors.forEach(vendorObj => {
                 const baseResult = vendorObj.baseResult;
                 vendorObj[prop].forEach(rule => {
-                    const canonizedRule = tslib_1.__assign({}, canonizer(rule));
-                    canonizedRule.result = tslib_1.__assign({}, baseResult, canonizedRule.result);
+                    const canonizedRule = Object.assign({}, canonizer(rule));
+                    canonizedRule.result = Object.assign({}, baseResult, canonizedRule.result);
                     if (!canonizedRule.ruleType) {
                         canonizedRule.ruleType = ruleType;
                     }
@@ -209,7 +209,7 @@ class VendorManager {
         });
     }
     prepareVendor(vendorName, vendorObj) {
-        const preparedVendor = tslib_1.__assign({ baseResult: {}, hostnameRules: [], urlRules: [], ipRangeRules: [], headerRules: [], dnsRules: [], metaRules: [], htmlRules: [], scriptRules: [] }, vendorObj);
+        const preparedVendor = Object.assign({ baseResult: {}, hostnameRules: [], urlRules: [], ipRangeRules: [], headerRules: [], dnsRules: [], metaRules: [], htmlRules: [], scriptRules: [] }, vendorObj);
         if (!preparedVendor.baseResult.vendor) {
             preparedVendor.baseResult.vendor = vendorName;
         }
@@ -256,7 +256,7 @@ class VendorManager {
             impliedVendors.forEach(impliedVendor => {
                 vendorNames.add(impliedVendor);
                 // Add results for each implied vendor
-                impliedResults.push(tslib_1.__assign({}, result, { vendor: impliedVendor }));
+                impliedResults.push(Object.assign({}, result, { vendor: impliedVendor, impliedBy: result.vendor }));
             });
         });
         impliedResults.forEach(result => results.push(result));
@@ -286,10 +286,10 @@ class VendorManager {
             let results = [];
             const hostname = url.parse(targetUrl).hostname.toLowerCase();
             const addResult = (rule) => {
-                results.push(tslib_1.__assign({ hostname, url: targetUrl }, rule.result, { rule }));
+                results.push(Object.assign({ hostname, url: targetUrl }, rule.result, { rule }));
             };
             const addResultDns = (rule) => {
-                results.push(tslib_1.__assign({ hostname }, rule.result, { rule }));
+                results.push(Object.assign({ hostname }, rule.result, { rule }));
             };
             this.hostnameRules.forEach(rule => {
                 if (matchPattern(hostname, rule.pattern)) {
@@ -348,7 +348,7 @@ class VendorManager {
             let results = [];
             const hostname = url.parse(targetUrl).hostname.toLowerCase();
             const addResult = (rule) => {
-                results.push(tslib_1.__assign({ hostname, url: targetUrl }, rule.result, { rule }));
+                results.push(Object.assign({ hostname, url: targetUrl }, rule.result, { rule }));
             };
             const htmlResults = yield resolver.resolveHtml(targetUrl);
             htmlResults.forEach(htmlResult => {
@@ -406,7 +406,7 @@ exports.VendorRuleCanonizers = {
     ipRangeRules(rule) {
         if (rule.ipRange) {
             const netmask = new netmask_1.Netmask(rule.ipRange);
-            return tslib_1.__assign({ first: netmask_1.ip2long(netmask.first), last: netmask_1.ip2long(netmask.last) }, rule);
+            return Object.assign({ first: netmask_1.ip2long(netmask.first), last: netmask_1.ip2long(netmask.last) }, rule);
         }
         return rule;
     },

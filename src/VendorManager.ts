@@ -339,7 +339,8 @@ export class VendorManager {
         // Add results for each implied vendor
         impliedResults.push({
           ...result,
-          vendor: impliedVendor
+          vendor: impliedVendor,
+          impliedBy: result.vendor
         });
       });
     });

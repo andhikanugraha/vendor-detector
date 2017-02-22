@@ -51,6 +51,9 @@ export interface DetectionResult {
 
   // Which rule was used to come up with the result
   rule?: VendorRuleObject;
+
+  // Which vendor implied this result
+  impliedBy?: string;
 }
 
 export interface VendorRuleObject {
