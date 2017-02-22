@@ -185,10 +185,14 @@ export function template(params) {
     <hr>
     <h4 style="padding-top: 0.75rem">Detection results for <strong>${params.selfHostname}</strong></h4>
     ${domains(params.ownDomainResults, params.selfHostname)}
-    <hr>
-    <h4 style="padding-top: 0.75rem">Resources linked by <strong>${params.selfHostname}</strong></h4>
-    ${domains(params.otherDomainResults)}
     `;
+    if (params.otherDomainResults && Object.keys(params.otherDomainResults).length > 0) {
+      body += `
+      <hr>
+      <h4 style="padding-top: 0.75rem">Resources linked by <strong>${params.selfHostname}</strong></h4>
+      ${domains(params.otherDomainResults)}
+      `;
+    }
   }
   else if (params.q) {
     body = `
