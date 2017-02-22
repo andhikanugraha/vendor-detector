@@ -1,4 +1,6 @@
 import * as url from 'url';
+import * as sortBy from 'lodash.sortby';
+import * as uniq from 'lodash.uniq';
 import { long2ip } from 'netmask';
 
 function eqHostname(a, b) {
@@ -22,27 +24,50 @@ function separateData(params) {
   const selfHostname = url.parse(params.q).hostname;
   params.selfHostname = selfHostname;
 
-  let existing = [];
-  let filtered = params.data.filter(row => {
-    if (!existing.some(r => (
-      eqHostname(r.hostname, row.hostname) &&
-      r.region === row.region &&
-      r.vendor === row.vendor &&
-      r.rule.ruleType === row.rule.ruleType
-    ))) {
-      existing.push(row);
-      return true;
+  const data = sortBy(params.data, [
+    x => x.hostname,
+    x => x.vendor,
+    x => x.rule.ruleType,
+    x => x.rule.name
+  ]);
+  let lastHostname = '';
+  let lastVendor = '';
+  const ownDomainData = {};
+  const linkedDomainData = {};
+  const dataByHostname = {};
+
+  data.forEach(row => {
+    let parentObject;
+    if (eqHostname(selfHostname, row.hostname)) {
+      parentObject = ownDomainData;
+    }
+    else {
+      parentObject = linkedDomainData;
+    }
+    if (lastHostname !== row.hostname) {
+      parentObject[row.hostname] = {};
+      lastHostname = row.hostname;
+      lastVendor = '';
     }
 
-    return false;
+    if (lastVendor.toLowerCase() !== row.vendor.toLowerCase()) {
+      parentObject[row.hostname][row.vendor] = [];
+      lastVendor = row.vendor;
+    }
+
+    parentObject[row.hostname][lastVendor].push(row);
   });
 
-  const filter = row => eqHostname(row.hostname, selfHostname);
-  params.selfRows = filtered.filter(filter);
-  params.otherRows = filtered.filter(row => !filter(row));
+  params.ownDomainResults = ownDomainData;
+  params.otherDomainResults = linkedDomainData;
 }
 
-function reason(rule) {
+function reason(result) {
+  const rule = result.rule;
+  if (result.impliedBy) {
+    return `Implied by ${result.impliedBy}`;
+  }
+
   switch (rule.ruleType) {
     case 'ipRange':
       if (rule.ipRange) {
@@ -72,88 +97,114 @@ function reason(rule) {
   }
 }
 
+function domains(domainsObj) {
+  let output = '';
+
+  Object.keys(domainsObj).forEach(key => {
+    let resultsByVendor = domainsObj[key];
+    if (!resultsByVendor || resultsByVendor.length === 0) {
+      output = `No results`;
+      return;
+    }
+
+    output += `
+    <div class="row" style="padding-top: 1rem">
+      <div class="col-lg-4">
+        <h5 style="padding-top: 0.75rem">${key}</h5>
+      </div>
+      <div class="col-lg-8">
+        <table class="table table-bordered">
+          <thead class="thead-default">
+            <tr>
+              <th width="50%">Vendor</th>
+              <th width="50%">Detected through</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    Object.keys(resultsByVendor).forEach(vendorName => {
+      let rows = resultsByVendor[vendorName];
+      let numRows = rows.length;
+      let firstRow = rows[0];
+      let reasons = uniq(rows.map(row => reason(row)));
+      let numReasons = reasons.length;
+      let firstReason = reasons.shift();
+      output += `
+      <tr>
+        <td width="50%" rowspan="${numReasons}">${(firstRow.vendor || '')}${(firstRow.region && ` <code>${firstRow.region}</code>` || '')}</td>
+        <td width="50%">${firstReason}</td>
+      </tr>
+      `;
+      reasons.forEach(reason => {
+        output += `
+        <tr>
+          <td width="50%">${reason}</td>
+        </tr>
+        `;
+      });
+    });
+
+    output += `
+          </tbody>
+        </table>
+      </div>
+    </div>
+    `;
+  });
+
+  return output;
+}
+
 export function template(params) {
   let body = '';
   separateData(params);
 
-  if (params.selfRows && params.selfRows.length > 0) {
+  if (params.ownDomainResults && Object.keys(params.ownDomainResults).length > 0) {
     body = `
-<hr>
-<h4 style="padding-bottom: 0.3em">Results for <strong>${params.selfHostname}</strong></h4>
-<table class="table">
-  <thead>
-    <tr>
-      <th>Hostname</th>
-      <th>Vendor</th>
-      <th>Detected through</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${params.selfRows.map(row => `
-      <tr>
-        <td><strong>${row.hostname || ''}</strong></td>
-        <td>${(row.vendor || '')}${(row.region && ` <code>${row.region}</code>` || '')}</td>
-        <td>${reason(row.rule)}</td>
-      </tr>`).join('')}
-  </tbody>
-</table>
-
-<hr>
-<h5 style="padding-bottom: 0.3em">Resources linked by <strong>${params.selfHostname}</strong></h5>
-<table class="table">
-  <thead>
-    <tr>
-      <th>Hostname</th>
-      <th>Vendor</th>
-      <th>Detected through</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${params.otherRows.map(row => `
-      <tr>
-        <td><strong>${row.hostname || ''}</strong></td>
-        <td>${(row.vendor || '')}${(row.region && ` <code>${row.region}</code>` || '')}</td>
-        <td>${reason(row.rule)}</td>
-      </tr>`).join('')}
-  </tbody>
-</table>
-`;
+    <hr>
+    <h4 style="padding-top: 0.75rem">Detection results for <strong>${params.selfHostname}</strong></h4>
+    ${domains(params.ownDomainResults)}
+    <hr>
+    <h4 style="padding-top: 0.75rem">Resources linked by <strong>${params.selfHostname}</strong></h4>
+    ${domains(params.otherDomainResults)}
+    `;
   }
   else if (params.q) {
     body = `
-<hr>
-<p>No results found for <strong>${params.selfHostname}</strong>.</p>
-`;
+    <hr>
+    <p>No results found for <strong>${params.selfHostname}</strong>.</p>
+    `;
   }
 
   return `
-<!doctype html>
-<title>Vendor detector (alpha)</title>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta http-equiv="x-ua-compatible" content="ie=edge">
-<link rel="stylesheet" href="css/bootstrap.css">
-<div class="container">
-  <h1 style="padding-top: 1em">Vendor detector <span class="tag tag-info">alpha</span></h1>
-  <p class="lead">Type a URL into the box below to detect its vendors.</p>
+  <!doctype html>
+  <title>Vendor detector (alpha)</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <link rel="stylesheet" href="/css/bootstrap.css">
+  <div class="container">
+    <h1 style="padding-top: 2rem">Vendor detector <span class="tag tag-info">alpha</span></h1>
+    <p>Type a URL into the box below to detect its vendors.</p>
 
-  <form class="form" action="/" method="GET">
-    <p class="input-group">
-      <input type="text" class="form-control" placeholder="Target URL" name="q" value="${params.q || ''}">
-      <span class="input-group-btn">
-        <button class="btn btn-primary" type="submit">Search</button>
-      </span>
-    </p>
-  </form>
+    <form class="form" action="/" method="GET">
+      <p class="input-group">
+        <input type="text" class="form-control" placeholder="Target URL" name="q" value="${params.q || ''}">
+        <span class="input-group-btn">
+          <button class="btn btn-primary" type="submit">Search</button>
+        </span>
+      </p>
+    </form>
 
-  ${body}
+    ${body}
 
-  <footer class="text-muted">
-    <p><small>
-      An <a href="https://github.com/andhikanugraha/vendor-detector">open source project</a> by Andhika Nugraha.
-      This product includes GeoLite data created by MaxMind, available from <a href="http://www.maxmind.com">http://www.maxmind.com</a>.
-    </small></p>
-  </footer>
-</div>
-`;
+    <footer class="text-muted">
+      <p><small>
+        An <a href="https://github.com/andhikanugraha/vendor-detector">open source project</a> by Andhika Nugraha.
+        This product includes GeoLite data created by MaxMind, available from <a href="http://www.maxmind.com">http://www.maxmind.com</a>.
+      </small></p>
+    </footer>
+  </div>
+  `;
 }

@@ -32,6 +32,8 @@
     "globby": "^6.1.0",
     "graceful-fs": "^4.1.11",
     "js-yaml": "^3.7.0",
+    "lodash.sortby": "^4.7.0",
+    "lodash.uniq": "^4.5.0",
     "netmask": "^1.0.6",
     "node-fetch": "^1.6.3",
     "p-queue": "^0.2.0",

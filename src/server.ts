@@ -42,6 +42,8 @@ app.get('/', async(req, res, next) => {
   }
 });
 
-VendorManager.getInstance().init().then(() => Search.inited = true);
-app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));
+VendorManager.getInstance().init().then(() => {
+  Search.inited = true;
+  app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));
+});
 

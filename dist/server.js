@@ -36,5 +36,7 @@ app.get('/', (req, res, next) => tslib_1.__awaiter(this, void 0, void 0, functio
         res.send(template_1.template({ q, e }));
     }
 }));
-VendorManager_1.VendorManager.getInstance().init().then(() => Search_1.Search.inited = true);
-app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));
+VendorManager_1.VendorManager.getInstance().init().then(() => {
+    Search_1.Search.inited = true;
+    app.listen(process.env.PORT || 3000, () => console.log('Express now listening'));
+});
