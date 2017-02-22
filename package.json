@@ -25,7 +25,7 @@
     "typescript": "^2.1.4"
   },
   "dependencies": {
-    "bootstrap": "4.0.0-alpha.5",
+    "bootstrap": "4.0.0-alpha.6",
     "cheerio": "^0.22.0",
     "csv-parser": "^1.11.0",
     "express": "^4.14.0",

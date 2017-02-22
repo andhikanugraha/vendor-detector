@@ -7,10 +7,10 @@ function eqHostname(a, b) {
   if (a === b) {
     return true;
   }
-  if (a.match(b)) {
+  if (a.indexOf(b) !== -1) {
     return true;
   }
-  if (b.match(a)) {
+  if (b.indexOf(a) !== -1) {
     return true;
   }
 
@@ -97,60 +97,80 @@ function reason(result) {
   }
 }
 
-function domains(domainsObj) {
+function domainHelper(resultsByVendor: any[], hostname: string): string {
   let output = '';
 
-  Object.keys(domainsObj).forEach(key => {
-    let resultsByVendor = domainsObj[key];
-    if (!resultsByVendor || resultsByVendor.length === 0) {
-      output = `No results`;
+  if (!resultsByVendor || resultsByVendor.length === 0) {
+    output = `No results`;
+    return;
+  }
+
+  output += `
+  <div class="row" style="padding-top: 1rem">
+    <div class="col-lg-4">
+      <h5 style="padding-top: 0.75rem">${hostname}</h5>
+    </div>
+    <div class="col-lg-8">
+      <table class="table table-bordered">
+        <thead class="thead-default">
+          <tr>
+            <th width="50%">Vendor</th>
+            <th width="50%">Detected through</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  Object.keys(resultsByVendor).forEach(vendorName => {
+    let rows = resultsByVendor[vendorName];
+    let numRows = rows.length;
+    let firstRow = rows[0];
+    let reasons = uniq(rows.map(row => reason(row)));
+    let numReasons = reasons.length;
+    let firstReason = reasons.shift();
+    output += `
+    <tr>
+      <td width="50%" rowspan="${numReasons}">${(firstRow.vendor || '')}${(firstRow.region && ` <code>${firstRow.region}</code>` || '')}</td>
+      <td width="50%">${firstReason}</td>
+    </tr>
+    `;
+    reasons.forEach(reason => {
+      output += `
+      <tr>
+        <td width="50%">${reason}</td>
+      </tr>
+      `;
+    });
+  });
+
+  output += `
+        </tbody>
+      </table>
+    </div>
+  </div>
+  `;
+
+  return output;
+}
+
+function domains(domainsObj, mainHostname = '') {
+  let output = '';
+
+  if (mainHostname) {
+    if (domainsObj[mainHostname]) {
+      output += domainHelper(domainsObj[mainHostname], mainHostname);
+    }
+    if (domainsObj['www.' + mainHostname]) {
+      output += domainHelper(domainsObj['www.' + mainHostname], 'www.' + mainHostname);
+    }
+  }
+
+  Object.keys(domainsObj).forEach(hostname => {
+    if (hostname === mainHostname || hostname === 'www.' + mainHostname) {
       return;
     }
 
-    output += `
-    <div class="row" style="padding-top: 1rem">
-      <div class="col-lg-4">
-        <h5 style="padding-top: 0.75rem">${key}</h5>
-      </div>
-      <div class="col-lg-8">
-        <table class="table table-bordered">
-          <thead class="thead-default">
-            <tr>
-              <th width="50%">Vendor</th>
-              <th width="50%">Detected through</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    Object.keys(resultsByVendor).forEach(vendorName => {
-      let rows = resultsByVendor[vendorName];
-      let numRows = rows.length;
-      let firstRow = rows[0];
-      let reasons = uniq(rows.map(row => reason(row)));
-      let numReasons = reasons.length;
-      let firstReason = reasons.shift();
-      output += `
-      <tr>
-        <td width="50%" rowspan="${numReasons}">${(firstRow.vendor || '')}${(firstRow.region && ` <code>${firstRow.region}</code>` || '')}</td>
-        <td width="50%">${firstReason}</td>
-      </tr>
-      `;
-      reasons.forEach(reason => {
-        output += `
-        <tr>
-          <td width="50%">${reason}</td>
-        </tr>
-        `;
-      });
-    });
-
-    output += `
-          </tbody>
-        </table>
-      </div>
-    </div>
-    `;
+    output += domainHelper(domainsObj[hostname], hostname);
   });
 
   return output;
@@ -164,7 +184,7 @@ export function template(params) {
     body = `
     <hr>
     <h4 style="padding-top: 0.75rem">Detection results for <strong>${params.selfHostname}</strong></h4>
-    ${domains(params.ownDomainResults)}
+    ${domains(params.ownDomainResults, params.selfHostname)}
     <hr>
     <h4 style="padding-top: 0.75rem">Resources linked by <strong>${params.selfHostname}</strong></h4>
     ${domains(params.otherDomainResults)}
@@ -185,10 +205,10 @@ export function template(params) {
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   <link rel="stylesheet" href="/css/bootstrap.css">
   <div class="container">
-    <h1 style="padding-top: 2rem">Vendor detector <span class="tag tag-info">alpha</span></h1>
+    <h1 style="padding-top: 2rem">Vendor detector <span class="badge badge-info">alpha</span></h1>
     <p>Type a URL into the box below to detect its vendors.</p>
 
-    <form class="form" action="/" method="GET">
+    <form class="form" action="/" method="GET" onsubmit="document.getElementById('loadingMessage').style.display='block'">
       <p class="input-group">
         <input type="text" class="form-control" placeholder="Target URL" name="q" value="${params.q || ''}">
         <span class="input-group-btn">
@@ -196,6 +216,10 @@ export function template(params) {
         </span>
       </p>
     </form>
+
+    <p id="loadingMessage" style="display: none">
+      <img src="/rolling.svg" style="width:1.5rem;height:1.5rem;margin-right:0.5rem"> Loading results...
+    </p>
 
     ${body}
 
