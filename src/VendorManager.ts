@@ -150,16 +150,19 @@ export class VendorManager {
   private loadWappalyzerApp(vendorName: string, appObj: any): Vendor.Vendor {
     const newVendor: Vendor.Vendor = {};
 
-    const parseWappalyzerPattern = (pattern: string): RegExp | string => {
+    const parseWappalyzerPattern = (pattern: string): RegExp => {
       // Parse Wappalyzer patterns
       // For now, implement only the product detection, ignore metadata
       // TODO: implement confidence level & version detection
       const splitPattern = pattern.split('\\;');
-      try {
-        return new RegExp(splitPattern[0]);
-      }
-      catch (e) { }
+      return new RegExp(splitPattern[0]);
+    };
 
+    const parseWappalyzerLinkedVendor = (pattern: string): string => {
+      // Parse Wappalyzer implies/excludes values
+      // For now, implement only the product detection, ignore metadata
+      // TODO: implement confidence level & version detection
+      const splitPattern = pattern.split('\\;');
       return splitPattern[0];
     };
 
@@ -169,10 +172,10 @@ export class VendorManager {
       }
 
       if (appObj[prop] instanceof Array) {
-        newVendor[prop] = [...appObj[prop]];
+        newVendor[prop] = [...appObj[prop].map(parseWappalyzerLinkedVendor)];
       }
       else {
-        newVendor[prop] = [appObj[prop]];
+        newVendor[prop] = [parseWappalyzerLinkedVendor(appObj[prop])];
       }
     });
 

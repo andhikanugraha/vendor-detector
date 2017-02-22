@@ -116,10 +116,13 @@ class VendorManager {
             // For now, implement only the product detection, ignore metadata
             // TODO: implement confidence level & version detection
             const splitPattern = pattern.split('\\;');
-            try {
-                return new RegExp(splitPattern[0]);
-            }
-            catch (e) { }
+            return new RegExp(splitPattern[0]);
+        };
+        const parseWappalyzerLinkedVendor = (pattern) => {
+            // Parse Wappalyzer implies/excludes values
+            // For now, implement only the product detection, ignore metadata
+            // TODO: implement confidence level & version detection
+            const splitPattern = pattern.split('\\;');
             return splitPattern[0];
         };
         ['implies', 'excludes'].forEach(prop => {
@@ -127,10 +130,10 @@ class VendorManager {
                 return;
             }
             if (appObj[prop] instanceof Array) {
-                newVendor[prop] = [...appObj[prop]];
+                newVendor[prop] = [...appObj[prop].map(parseWappalyzerLinkedVendor)];
             }
             else {
-                newVendor[prop] = [appObj[prop]];
+                newVendor[prop] = [parseWappalyzerLinkedVendor(appObj[prop])];
             }
         });
         ['url', 'html', 'script'].forEach(prop => {
