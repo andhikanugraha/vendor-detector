@@ -21,9 +21,6 @@ Amazon S3:
 Amazon Route 53:
   dnsRules:
     - ns: awsdns
-Microsoft IIS:
-  headerRules:
-    - Server: Microsoft-IIS/
 Microsoft Office 365:
   dnsRules:
     - mx: outlook\.com$
