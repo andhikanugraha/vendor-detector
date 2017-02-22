@@ -1,18 +1,15 @@
-'use strict';
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator['throw'](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
-    });
-};
-const index_1 = require('./index');
+"use strict";
+const tslib_1 = require("tslib");
+const VendorManager_1 = require("./VendorManager");
+const Search_1 = require("./Search");
 function main() {
-    return __awaiter(this, void 0, void 0, function* () {
-        let search = new index_1.Search('https://azure.microsoft.com/');
-        const results = yield search.detectVendors();
-        console.dir(results);
+    return tslib_1.__awaiter(this, void 0, void 0, function* () {
+        const results = yield Search_1.detectVendors('https://www.joomla.org');
+        console.log('\nFinal results:');
+        console.dir(results, { colors: true, depth: 4 });
+        const vm = VendorManager_1.VendorManager.getInstance();
+        const availableVendors = vm.vendors;
+        console.dir(availableVendors.get('Joomla'));
     });
 }
 main();
